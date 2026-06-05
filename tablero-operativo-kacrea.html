@@ -678,7 +678,7 @@ function renderKPIs(){
   // ── EN COTIZACIÓN ────────────────────────────────────
   // "Por Elaboración" + "En Revisión Interna" en el período
   const cotiz_rows = RAW.filter(r =>
-    ['Por Elaboración','En Revisión Interna'].includes(r.est_ppto) && inPeriodo(r.mes_sol)
+    ['Por Elaboración','En Revisión Interna','Proceso de Licitación'].includes(r.est_ppto) && inPeriodo(r.mes_sol)
   );
   const cotizacion = cotiz_rows.reduce((a,r) => a + r.monto_ppto, 0);
   const nCotiz     = new Set(cotiz_rows.map(r=>(r.id||'').trim()).filter(id=>id!=='')).size;
@@ -694,11 +694,14 @@ function renderKPIs(){
     : 0;
 
   // ── NEW LEADS - REQUIREMENTS ─────────────────────────
-  // Proyectos cuya Fecha de Solicitud cae en la semana en curso (lunes → hoy)
-  const wkStart = currentWeekStart();
-  const newLeadsRows = RAW.filter(r => r.fecha_sol && r.fecha_sol >= wkStart && r.fecha_sol <= currentWeekEnd());
+  // Lunes: semana anterior completa · Mar-Dom: semana en curso (ver leadsWindow)
+  const lw = leadsWindow();
+  const newLeadsRows = RAW.filter(r => r.fecha_sol && r.fecha_sol >= lw.start && r.fecha_sol <= lw.end && leadQualifies(r.id, lw));
   const nNewLeads = new Set(newLeadsRows.map(r=>(r.id||'').trim()).filter(id=>id!=='')).size;
-  const wkLbl = wkStart.toLocaleDateString('es-MX',{day:'2-digit',month:'short'});
+  const _fD = d => d.toLocaleDateString('es-MX',{day:'2-digit',month:'short'});
+  const wkLbl = lw.prevWeek
+    ? `sem. anterior · ${_fD(lw.start)}–${_fD(lw.end)}`
+    : `esta semana · desde ${_fD(lw.start)}`;
 
   document.getElementById('kpi-grid').innerHTML=`
     <div class="kpi c-teal clickable" onclick="openDetail('ventas')">
@@ -729,7 +732,7 @@ function renderKPIs(){
       <div class="kpi-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
       <div class="kpi-lbl">En Cotización</div>
       <div class="kpi-val">${fmt(cotizacion)}</div>
-      <div class="kpi-sub"><b>${nCotiz}</b> proyectos · Por Elab. + En Revisión</div>
+      <div class="kpi-sub"><b>${nCotiz}</b> proyectos · Por Elab. + Rev. Int. + Licitación</div>
     </div>
     <div class="kpi c-red clickable" onclick="openDetail('rechazados')">
       <div class="kpi-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
@@ -747,7 +750,7 @@ function renderKPIs(){
       <div class="kpi-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg></div>
       <div class="kpi-lbl">New Leads - Requirements</div>
       <div class="kpi-val">${nNewLeads}</div>
-      <div class="kpi-sub"><b>${newLeadsRows.length}</b> registros · desde ${wkLbl}</div>
+      <div class="kpi-sub"><b>${newLeadsRows.length}</b> registros · ${wkLbl}</div>
     </div>`;
 }
 
@@ -775,7 +778,7 @@ function renderA(){
     const porFacturar_d = fact_rows_d.reduce((a,r) => a + r.monto_ppto, 0);
 
     // En Cotización: Por Elaboración + En Revisión Interna (cantidad de proyectos)
-    const cotiz_rows = dr.filter(r => ['Por Elaboración','En Revisión Interna'].includes(r.est_ppto));
+    const cotiz_rows = dr.filter(r => ['Por Elaboración','En Revisión Interna','Proceso de Licitación'].includes(r.est_ppto));
     const nCotiz_d   = new Set(cotiz_rows.map(r=>(r.id||'').trim()).filter(id=>id!=='')).size;
 
     // Rechazados: suma Monto PPTO
@@ -1128,7 +1131,7 @@ function hideFTip(){
 /* ══ FILTROS PESTAÑA OPERACIÓN (Departamento / Responsable) ══ */
 // Universo base de la pestaña: proyectos activos (Aprobado · En Curso/Pendiente)
 function opUniverse(){
-  return RAW.filter(r=>r.est_ppto==='Aprobado'&&['En Curso','Pendiente'].includes(r.est_proy));
+  return RAW.filter(r=>r.est_ppto==='Aprobado'&&['En Curso','Pendiente','En Revisión'].includes(r.est_proy));
 }
 // Aplica los filtros de la pestaña Operación a un conjunto de filas
 function opRows(rows){
@@ -1171,7 +1174,7 @@ function renderOperacion(){ renderG(); renderH(); renderI(); renderN(); }
 function renderG(){
   const active=opRows(RAW.filter(r=>
     r.est_ppto==='Aprobado'&&
-    ['En Curso','Pendiente'].includes(r.est_proy)
+    ['En Curso','Pendiente','En Revisión'].includes(r.est_proy)
   ));
   const byDepto=new Map();
   active.forEach(r=>{
@@ -1195,7 +1198,7 @@ function renderH(){
   const rows=opRows(RAW.filter(r=>
     r.prioridad==='Alta'&&
     r.est_ppto==='Aprobado'&&
-    ['En Curso','Pendiente'].includes(r.est_proy)
+    ['En Curso','Pendiente','En Revisión'].includes(r.est_proy)
   )).sort((a,b)=>(a.fecha_lim||new Date(9999))-(b.fecha_lim||new Date(9999)));
 
   document.getElementById('tbody-h').innerHTML=rows.length?rows.map(r=>{
@@ -1217,7 +1220,7 @@ function renderH(){
 function renderI(){
   const active=opRows(RAW.filter(r=>
     r.est_ppto==='Aprobado'&&
-    ['En Curso','Pendiente'].includes(r.est_proy)
+    ['En Curso','Pendiente','En Revisión'].includes(r.est_proy)
   ));
   const byPerson=new Map();
   active.forEach(r=>{
@@ -1343,7 +1346,7 @@ function renderN(){
   const limit=new Date(today); limit.setDate(today.getDate()+14);
   const rows=opRows(RAW.filter(r=>
     r.est_ppto==='Aprobado'&&
-    ['En Curso','Pendiente'].includes(r.est_proy)&&
+    ['En Curso','Pendiente','En Revisión'].includes(r.est_proy)&&
     r.fecha_lim&&
     (r.fecha_lim<=limit)
   )).sort((a,b)=>a.fecha_lim-b.fecha_lim);
@@ -1454,17 +1457,38 @@ function switchTab(name){
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='panel-'+name));
 }
 
-/* ══ SEMANA EN CURSO (lunes → hoy) ══ */
-function currentWeekStart(){
+/* ══ VENTANA NEW LEADS ══
+   Lunes   → semana ANTERIOR completa (lun pasado 00:00 → dom pasado 23:59)
+   Mar-Dom → semana EN CURSO (lunes de esta semana 00:00 → ahora)
+   Así los lunes se ve el acumulado cerrado de la semana previa,
+   y a partir del martes empieza a contar la semana en curso. */
+function leadsWindow(){
   const t=new Date(); t.setHours(0,0,0,0);
-  const day=t.getDay();              // 0=Dom, 1=Lun, ... 6=Sáb
-  const diff=(day===0?6:day-1);      // días transcurridos desde el lunes
-  const ws=new Date(t); ws.setDate(t.getDate()-diff);
-  return ws;
+  const day=t.getDay();                    // 0=Dom,1=Lun,...6=Sáb
+  if(day===1){                             // Lunes → semana anterior
+    const start=new Date(t); start.setDate(t.getDate()-7);                              // lunes anterior
+    const end=new Date(t);   end.setDate(t.getDate()-1); end.setHours(23,59,59,999);    // domingo anterior
+    return {start, end, prevWeek:true};
+  }
+  const diff=(day===0?6:day-1);            // días desde el lunes de esta semana
+  const start=new Date(t); start.setDate(t.getDate()-diff);
+  const end=new Date(); end.setHours(23,59,59,999);
+  return {start, end, prevWeek:false};
 }
-function currentWeekEnd(){
-  const te=new Date(); te.setHours(23,59,59,999);
-  return te;
+
+/* ¿El código de esta fila califica como New Lead dentro de la ventana?
+   Regla: cuenta si es la PRIMERA aparición del código (no tiene filas con
+   Fecha de Solicitud anterior al inicio de la ventana). Excepción: aunque sea
+   una renovación (mismo código que ya existía, ej. Gestión de Redes mensual),
+   SÍ cuenta si su presupuesto del período está "Por Elaboración". */
+function leadQualifies(id, lw){
+  id=(id||'').trim();
+  if(!id) return true;                                  // sin código → fila individual, cuenta
+  const esRenovacion = RAW.some(r=>(r.id||'').trim()===id && r.fecha_sol && r.fecha_sol < lw.start);
+  if(!esRenovacion) return true;                        // primera aparición → cuenta
+  // renovación → solo cuenta si en la ventana hay un presupuesto "Por Elaboración"
+  return RAW.some(r=>(r.id||'').trim()===id && r.fecha_sol &&
+    r.fecha_sol>=lw.start && r.fecha_sol<=lw.end && r.est_ppto==='Por Elaboración');
 }
 
 /* ══ DETALLE DE TARJETAS (MODAL) ══ */
@@ -1473,10 +1497,10 @@ const KPI_DETAIL = {
   cobrado:     {title:'Cobrado',               sub:'Aprobados con monto cobrado',                        filter:r=>r.est_ppto==='Aprobado'&&r.monto_cob>0&&inSol(r.mes_sol)},
   porcobrar:   {title:'Por Cobrar',            sub:'Aprobados con saldo pendiente de cobro',             filter:r=>r.est_ppto==='Aprobado'&&inPeriodo(r.mes_sol)&&r.monto_cob<r.monto_ppto},
   porfacturar: {title:'Por Facturar',          sub:'Enviado - Pendiente A. C.',                          filter:r=>r.est_ppto==='Enviado - Pendiente A. C.'&&inPeriodo(r.mes_sol)},
-  cotizacion:  {title:'En Cotización',         sub:'Por Elaboración + En Revisión Interna',              filter:r=>['Por Elaboración','En Revisión Interna'].includes(r.est_ppto)&&inPeriodo(r.mes_sol)},
+  cotizacion:  {title:'En Cotización',         sub:'Por Elaboración + En Revisión Interna + Proceso de Licitación', filter:r=>['Por Elaboración','En Revisión Interna','Proceso de Licitación'].includes(r.est_ppto)&&inPeriodo(r.mes_sol)},
   rechazados:  {title:'Proyectos Rechazados',  sub:'Presupuestos rechazados',                            filter:r=>r.est_ppto==='Rechazado'&&inPeriodo(r.mes_sol)},
   tasa:        {title:'Tasa de Cierre',        sub:'Aprobados + Rechazados (base del cálculo)',          filter:r=>['Aprobado','Rechazado'].includes(r.est_ppto)&&inPeriodo(r.mes_sol)},
-  newleads:    {title:'New Leads - Requirements', sub:'Proyectos nuevos de la semana en curso (Lun → hoy)', weekly:true, dedupe:true, filter:r=>r.fecha_sol&&r.fecha_sol>=currentWeekStart()&&r.fecha_sol<=currentWeekEnd()},
+  newleads:    {title:'New Leads - Requirements', sub:'Proyectos nuevos (excluye renovaciones, salvo Por Elaboración) · lunes: semana anterior', weekly:true, dedupe:true, filter:r=>{const lw=leadsWindow(); return r.fecha_sol&&r.fecha_sol>=lw.start&&r.fecha_sol<=lw.end&&leadQualifies(r.id,lw);}},
 };
 
 let MODAL_ROWS = [];
