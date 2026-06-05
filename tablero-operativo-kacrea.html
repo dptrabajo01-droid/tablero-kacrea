@@ -114,13 +114,10 @@ select:disabled{opacity:0.4;cursor:not-allowed}
 .badge-blue{background:var(--blue-dim);color:var(--blue)}
 .badge-purple{background:var(--purple-dim);color:var(--purple)}
 
-/* CARD MINI FILTERS */
-.card-filters-bar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border)}
-.card-filters-bar select{font-size:11px;padding:3px 20px 3px 7px;height:26px;background-position:right 5px center;background-size:9px}
-.card-filters-bar .cf-label{font-size:10px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.07em;white-space:nowrap}
-.card-filters-bar .cf-clear{font-size:10px;color:var(--muted);background:var(--surface2);border:1px solid var(--border-md);border-radius:var(--r-sm);padding:2px 8px;cursor:pointer;transition:all .2s}
-.card-filters-bar .cf-clear:hover{background:var(--surface3)}
-@media(max-width:768px){.card-filters-bar select{font-size:10px;height:28px}}
+/* OPERACIÓN — FILTER BAR */
+.op-filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 16px;margin-bottom:14px;box-shadow:var(--sh)}
+.op-filters .f-label{font-size:10px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.08em;white-space:nowrap}
+@media(max-width:768px){.op-filters{padding:10px 12px;gap:8px}}
 
 /* TABLES */
 .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;width:100%}
@@ -288,8 +285,10 @@ tbody tr:hover td{background:var(--surface2)}
 .modal-search:focus{border-color:var(--purple);box-shadow:0 0 0 3px var(--purple-dim)}
 .modal-count{font-size:11px;font-family:'DM Mono',monospace;color:var(--faint);white-space:nowrap}
 .modal-body{overflow-y:auto;padding:4px 22px 22px}
-.modal-body table{min-width:560px}
-@media(max-width:768px){.modal{max-height:90vh}.modal-ov{padding:20px 8px}.modal-hdr{padding:14px 16px 12px}.modal-tools{padding:10px 16px}.modal-body{padding:4px 16px 16px}}
+.modal-body table{min-width:720px}
+.modal-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 22px;border-top:1px solid var(--border-md);background:var(--surface2);flex-shrink:0;font-size:13px;font-weight:700;color:var(--text)}
+.modal-foot .mf-total{color:var(--teal);font-family:'DM Mono',monospace;font-size:14px}
+@media(max-width:768px){.modal{max-height:90vh}.modal-ov{padding:20px 8px}.modal-hdr{padding:14px 16px 12px}.modal-tools{padding:10px 16px}.modal-body{padding:4px 16px 16px}.modal-foot{padding:11px 16px;font-size:12px}}
 </style>
 </head>
 <body>
@@ -352,7 +351,7 @@ tbody tr:hover td{background:var(--surface2)}
 
   <div class="tab-panel active" id="panel-resumen">
 
-  <div class="full card" data-card-id="f">
+  <div class="full card">
     <div class="card-hdr"><div><div class="card-title">Estatus de Presupuestos</div><div class="card-sub">Distribución por estado · proyectos únicos</div></div></div>
     <div class="dona-wrap" id="dona-f">
       <svg id="svg-f" viewBox="0 0 200 200" width="180" style="flex-shrink:0"></svg>
@@ -361,33 +360,33 @@ tbody tr:hover td{background:var(--surface2)}
   </div>
 
   <div class="grid-3-2">
-    <div class="card" id="card-a" data-card-id="a">
+    <div class="card" id="card-a">
       <div class="card-hdr"><div><div class="card-title">Ventas por Departamento</div><div class="card-sub">Monto aprobado, cobrado, en cotización, rechazados y tasa de cierre por departamento</div></div></div>
       <div class="tbl-wrap"><table><thead><tr><th>Departamento</th><th class="r">Ventas $</th><th class="r">% Total</th><th class="r">Cobrado</th><th class="r">Por Cobrar</th><th class="r">Por Facturar</th><th class="r">En Cotización (#)</th><th class="r">Rechazados</th><th class="r">T. Cierre</th></tr></thead><tbody id="tbody-a"><tr><td colspan="8" class="empty">Cargando...</td></tr></tbody></table></div>
     </div>
-    <div class="card" id="card-b" data-card-id="b">
+    <div class="card" id="card-b">
       <div class="card-hdr"><div><div class="card-title">Concentración de Cartera</div><div class="card-sub">Top clientes como % del total aprobado</div></div><div class="card-badge badge-green" id="badge-b">Verde</div></div>
       <div id="content-b"><div class="sk" style="height:120px;border-radius:8px"></div></div>
     </div>
   </div>
 
-  <div class="full card" data-card-id="m">
+  <div class="full card">
     <div class="card-hdr"><div><div class="card-title">Ranking de Vendedores</div><div class="card-sub">Por Canal de Contacto Interno</div></div></div>
     <div class="tbl-wrap"><table><thead><tr><th>Vendedor</th><th class="r">Leads</th><th class="r">Aprobados</th><th class="r">Rechazados</th><th class="r">T. Cierre</th><th class="r">$ Aprobado</th></tr></thead><tbody id="tbody-m"></tbody></table></div>
   </div>
 
   <div class="grid-2">
-    <div class="card" data-card-id="j">
+    <div class="card">
       <div class="card-hdr"><div><div class="card-title">Top 10 Marcas por Monto Aprobado</div><div class="card-sub">Clientes con mayor monto de presupuesto aprobado</div></div></div>
       <div id="content-j"><div class="sk" style="height:160px;border-radius:8px"></div></div>
     </div>
-    <div class="card" data-card-id="k">
+    <div class="card">
       <div class="card-hdr"><div><div class="card-title">Análisis de Rechazos por Servicio</div><div class="card-sub">Servicios con mayor pérdida</div></div></div>
       <div class="tbl-wrap"><table><thead><tr><th>Servicio</th><th class="r"># Rechazos</th><th class="r">$ Perdido</th><th class="r">Ticket Prom.</th></tr></thead><tbody id="tbody-k"></tbody></table></div>
     </div>
   </div>
 
-  <div class="full card" data-card-id="l">
+  <div class="full card">
     <div class="card-hdr"><div><div class="card-title">Pricing Comparativo por Servicio</div><div class="card-sub">Rango de precios por servicio · alerta si Máx/Mín &gt; 5</div></div></div>
     <div class="tbl-wrap"><table><thead><tr><th>Servicio</th><th class="r">n</th><th class="r">Promedio</th><th class="r">Mín</th><th class="r">Máx</th><th class="r">Rango</th><th>Alerta</th></tr></thead><tbody id="tbody-l"></tbody></table></div>
   </div>
@@ -396,7 +395,7 @@ tbody tr:hover td{background:var(--surface2)}
 
   <div class="tab-panel" id="panel-cobranza">
 
-  <div class="full card" data-card-id="e">
+  <div class="full card">
     <div class="card-hdr"><div><div class="card-title">Ciclo Comercial — Tiempos Promedio</div><div class="card-sub">Días promedio entre etapas del proceso comercial</div></div></div>
     <div class="ciclo-grid" id="ciclo-grid">
       <div class="ciclo-card"><div class="ciclo-val sk" style="height:36px;width:60px;margin:0 auto 6px"></div><div class="ciclo-lbl">Solicitud → Aprobación</div></div>
@@ -407,12 +406,12 @@ tbody tr:hover td{background:var(--surface2)}
   </div>
 
   <div class="grid-2">
-    <div class="card" data-card-id="c">
+    <div class="card">
       <div class="card-hdr"><div><div class="card-title">Cobranza por Antigüedad</div><div class="card-sub">Desde Fecha A/R PPTO hasta hoy · Aprobados · IDs únicos agrupados</div></div></div>
       <div class="tbl-wrap"><table><thead><tr><th>Tramo</th><th class="r">Saldo CxC</th><th class="r">% CxC</th><th class="r"># Facturas</th></tr></thead><tbody id="tbody-c-ant"></tbody></table></div>
       <div style="margin-top:14px"><div class="card-title" style="font-size:11px;margin-bottom:8px;color:var(--muted)">Top 10 Deudores</div><div class="tbl-wrap"><table><thead><tr><th>Cliente</th><th class="r">Saldo</th><th class="r">Días</th></tr></thead><tbody id="tbody-c-top"></tbody></table></div></div>
     </div>
-    <div class="card" data-card-id="d">
+    <div class="card">
       <div class="card-hdr"><div><div class="card-title">Cobranza por Mes</div><div class="card-sub">Monto cobrado mensual</div></div></div>
       <div id="svg-d" style="width:100%;overflow-x:auto;margin-bottom:14px"></div>
       <div class="tbl-wrap"><table><thead><tr><th>Mes</th><th class="r"># Cobros</th><th class="r">Total Cobrado</th><th class="r">% Año</th><th>Top Cliente</th></tr></thead><tbody id="tbody-d"></tbody></table></div>
@@ -423,22 +422,29 @@ tbody tr:hover td{background:var(--surface2)}
 
   <div class="tab-panel" id="panel-operacion">
 
-  <div class="full card" data-card-id="g">
+  <div class="op-filters">
+    <span class="f-label">Filtrar:</span>
+    <select id="op-f-depto" onchange="onOpDeptoChange()"><option value="">Todos los departamentos</option></select>
+    <select id="op-f-resp" onchange="renderOperacion()"><option value="">Todos los responsables</option></select>
+    <button class="btn-clear-f" id="op-clear" onclick="limpiarOpFiltros()">✕ Limpiar filtros</button>
+  </div>
+
+  <div class="full card">
     <div class="card-hdr"><div><div class="card-title">Carga por Departamento</div><div class="card-sub">Proyectos activos (En Curso + Pendiente) con PPTO Aprobado</div></div></div>
     <div id="content-g"><div class="sk" style="height:120px;border-radius:8px"></div></div>
   </div>
 
-  <div class="full card" data-card-id="i">
+  <div class="full card">
     <div class="card-hdr"><div><div class="card-title">Capacidad por Persona</div><div class="card-sub">Proyectos activos asignados · semáforo</div></div></div>
     <div id="content-i"><div class="sk" style="height:120px;border-radius:8px"></div></div>
   </div>
 
-  <div class="full card" data-card-id="h">
+  <div class="full card">
     <div class="card-hdr"><div><div class="card-title">Prioridades Altas Activas</div><div class="card-sub">Aprobados · En Curso o Pendiente · ordenados por Fecha Límite</div></div></div>
     <div class="tbl-wrap"><table><thead><tr><th>Proyecto</th><th>Cliente</th><th>Responsable</th><th>Depto</th><th class="r">Fecha Límite</th><th>Estado</th></tr></thead><tbody id="tbody-h"></tbody></table></div>
   </div>
 
-  <div class="full card" data-card-id="n">
+  <div class="full card">
     <div class="card-hdr"><div><div class="card-title">Fechas Críticas</div><div class="card-sub">Proyectos Aprobados · En Curso o Pendiente · atrasados + próximos 14 días</div></div></div>
     <div class="tbl-wrap"><table><thead><tr><th>Proyecto</th><th>Cliente</th><th>Responsable</th><th>Depto</th><th class="r">Fecha Límite</th><th>Estado</th><th>Días</th></tr></thead><tbody id="tbody-n"></tbody></table></div>
   </div>
@@ -464,19 +470,6 @@ function pct(a,b){ return b>0?((a/b)*100).toFixed(1)+'%':'—'; }
 function daysBetween(a,b){ if(!a||!b)return null; return Math.round((b-a)/(1000*60*60*24)); }
 
 let RAW = [];
-
-/* ── CARD-LEVEL FILTERS ── */
-const CARD_FILTERS = {};
-function cfGet(id){ return CARD_FILTERS[id] || (CARD_FILTERS[id]={depto:'',resp:''}); }
-function setCF(id,key,val){ cfGet(id)[key]=val; }
-function cfRows(id,rows){
-  const cf=cfGet(id);
-  return rows.filter(r=>(!cf.depto||r.depto===cf.depto)&&(!cf.resp||r.responsable===cf.resp));
-}
-function renderCard(id){
-  ({a:renderA,b:renderB,c:renderC,d:renderD,e:renderE,f:renderF,
-    g:renderG,h:renderH,i:renderI,j:renderJ,k:renderK,l:renderL,m:renderM,n:renderN})[id]?.();
-}
 
 /* ── DETECT COLUMNS ── */
 function detectCols(headers){
@@ -579,35 +572,6 @@ function showAlert(msg){
 // Normaliza un valor de mes quitando el año si lo tiene (ej: "Mayo 2026" → "Mayo")
 function normMes(v){ return (v||'').trim().replace(/\s+\d{4}$/, ''); }
 
-/* ── POBLAR FILTROS DE TARJETAS ── */
-function poblarCardFilters(){
-  const deptos = [...new Set(RAW.map(r=>r.depto).filter(Boolean))].sort();
-  const resps  = [...new Set(RAW.map(r=>r.responsable).filter(Boolean))].sort();
-  const dOpts  = '<option value="">Todos deptos</option>' +
-    deptos.map(d=>`<option value="${d.replace(/"/g,'&quot;')}">${d}</option>`).join('');
-  const rOpts  = '<option value="">Todos responsables</option>' +
-    resps.map(r=>`<option value="${r.replace(/"/g,'&quot;')}">${r}</option>`).join('');
-
-  document.querySelectorAll('.card[data-card-id]').forEach(card=>{
-    const id = card.dataset.cardId;
-    let bar = card.querySelector('.card-filters-bar');
-    if(!bar){
-      bar = document.createElement('div');
-      bar.className = 'card-filters-bar';
-      const hdr = card.querySelector('.card-hdr');
-      if(hdr) hdr.insertAdjacentElement('afterend', bar);
-    }
-    const cf = cfGet(id);
-    bar.innerHTML = `
-      <span class="cf-label">Filtrar:</span>
-      <select id="cf-${id}-depto" onchange="setCF('${id}','depto',this.value);renderCard('${id}')">${dOpts}</select>
-      <select id="cf-${id}-resp"  onchange="setCF('${id}','resp', this.value);renderCard('${id}')">${rOpts}</select>
-      <button class="cf-clear" onclick="setCF('${id}','depto','');setCF('${id}','resp','');poblarCardFilters();renderCard('${id}')">✕ Limpiar</button>`;
-    if(cf.depto){ const s=bar.querySelector(`#cf-${id}-depto`); if(s) s.value=cf.depto; }
-    if(cf.resp) { const s=bar.querySelector(`#cf-${id}-resp`);  if(s) s.value=cf.resp; }
-  });
-}
-
 // Poblar selects de filtro con los meses únicos del campo correspondiente
 function poblarFiltros(){
   // Filtrar filas del año en curso usando fecha_sol (formato DD/MM/YYYY)
@@ -629,7 +593,7 @@ function poblarFiltros(){
     mesesSol.map(m => `<option value="${m}">${m}</option>`).join('');
   if(curSol) sel_sol.value = curSol;
 
-  poblarCardFilters();
+  poblarOpFiltros();
 }
 
 // Verifica si un valor de mes coincide con el filtro seleccionado
@@ -789,11 +753,10 @@ function renderKPIs(){
 
 /* ══ A: VENTAS POR DEPARTAMENTO ══ */
 function renderA(){
-  const _baseA = cfRows('a', RAW.filter(r=>inPeriodo(r.mes_sol)));
-  const deptos = [...new Set(_baseA.map(r=>r.depto).filter(Boolean))].sort();
+  const deptos = [...new Set(RAW.filter(r=>inPeriodo(r.mes_sol)).map(r=>r.depto).filter(Boolean))].sort();
 
   const data = deptos.map(d => {
-    const dr = cfRows('a', RAW.filter(r => r.depto === d && inSol(r.mes_sol)));
+    const dr = RAW.filter(r => r.depto === d && inSol(r.mes_sol));
 
     // Ventas: Aprobados suma Monto PPTO
     const apr_rows = dr.filter(r => r.est_ppto === 'Aprobado');
@@ -867,7 +830,7 @@ function renderA(){
 }
 /* ══ B: CONCENTRACIÓN DE CARTERA ══ */
 function renderB(){
-  const apr   = cfRows('b', RAW.filter(r => r.est_ppto === 'Aprobado' && inPeriodo(r.mes_sol)));
+  const apr   = RAW.filter(r => r.est_ppto === 'Aprobado' && inPeriodo(r.mes_sol));
   const total = apr.reduce((a,r) => a + r.monto_ppto, 0);
 
   const byCliente = new Map();
@@ -915,7 +878,7 @@ function renderB(){
 function renderC(){
   const today = new Date(); today.setHours(0,0,0,0);
 
-  const apr      = cfRows('c', RAW.filter(r => r.est_ppto === 'Aprobado' && r.fecha_ar));
+  const apr      = RAW.filter(r => r.est_ppto === 'Aprobado' && r.fecha_ar);
   const withDebt = apr.filter(r => r.monto_ppto > r.monto_cob);
 
   // Agrupar por cliente — fecha más antigua de deuda
@@ -983,7 +946,7 @@ function renderC(){
 function renderD(){
   // Misma base exacta que KPI Cobrado: Aprobados con Monto Cobrado > 0
   // SIN filtrar por mes_cob — incluye TODOS los registros cobrados
-  const cobRows = cfRows('d', RAW.filter(r => r.est_ppto === 'Aprobado' && r.monto_cob > 0 && inSol(r.mes_sol)));
+  const cobRows = RAW.filter(r => r.est_ppto === 'Aprobado' && r.monto_cob > 0 && inSol(r.mes_sol));
 
   const byMes = new Map();
   cobRows.forEach(r => {
@@ -1063,7 +1026,7 @@ function renderD(){
 
 /* ══ E: CICLO COMERCIAL ══ */
 function renderE(){
-  const apr = cfRows('e', RAW.filter(r => r.est_ppto === 'Aprobado' && inPeriodo(r.mes_sol)));
+  const apr = RAW.filter(r => r.est_ppto === 'Aprobado' && inPeriodo(r.mes_sol));
   function avgDays(fn){
     const vals = apr.map(fn).filter(v => v !== null && v >= 0 && v < 1000);
     return vals.length ? Math.round(vals.reduce((a,b) => a+b, 0) / vals.length) : null;
@@ -1092,9 +1055,8 @@ function renderE(){
 function renderF(){
   const estatuses = ['Aprobado','Rechazado','Por Elaboración','Enviado - Pendiente A. C.','En Revisión Interna','Proceso de Licitación'];
   const colors    = ['#0D9488','#DC2626','#0284C7','#D97706','#7C3AED','#0891B2'];
-  const _baseF = cfRows('f', RAW);
   const counts    = estatuses.map(e =>
-    new Set(_baseF.filter(r => r.est_ppto === e).map(r => r.id).filter(Boolean)).size
+    new Set(RAW.filter(r => r.est_ppto === e).map(r => r.id).filter(Boolean)).size
   );
   const total = counts.reduce((a,b) => a+b, 0);
 
@@ -1163,9 +1125,51 @@ function hideFTip(){
 }
 
 
+/* ══ FILTROS PESTAÑA OPERACIÓN (Departamento / Responsable) ══ */
+// Universo base de la pestaña: proyectos activos (Aprobado · En Curso/Pendiente)
+function opUniverse(){
+  return RAW.filter(r=>r.est_ppto==='Aprobado'&&['En Curso','Pendiente'].includes(r.est_proy));
+}
+// Aplica los filtros de la pestaña Operación a un conjunto de filas
+function opRows(rows){
+  const fd=document.getElementById('op-f-depto').value;
+  const fr=document.getElementById('op-f-resp').value;
+  return rows.filter(r=>(!fd||r.depto===fd)&&(!fr||r.responsable===fr));
+}
+// Poblar Departamento (y en cascada Responsable) con los valores del universo
+function poblarOpFiltros(){
+  const deptos=[...new Set(opUniverse().map(r=>r.depto).filter(Boolean))].sort();
+  const selD=document.getElementById('op-f-depto');
+  const curD=selD.value;
+  selD.innerHTML='<option value="">Todos los departamentos</option>'+
+    deptos.map(d=>`<option value="${d.replace(/"/g,'&quot;')}">${d}</option>`).join('');
+  selD.value=(curD&&deptos.includes(curD))?curD:'';
+  poblarOpResp();
+}
+// Responsable solo con los del departamento elegido (o todos si no hay departamento)
+function poblarOpResp(){
+  const fd=document.getElementById('op-f-depto').value;
+  const base=fd?opUniverse().filter(r=>r.depto===fd):opUniverse();
+  const resps=[...new Set(base.map(r=>r.responsable).filter(Boolean))].sort();
+  const selR=document.getElementById('op-f-resp');
+  const cur=selR.value;
+  selR.innerHTML='<option value="">Todos los responsables</option>'+
+    resps.map(r=>`<option value="${r.replace(/"/g,'&quot;')}">${r}</option>`).join('');
+  selR.value=(cur&&resps.includes(cur))?cur:'';
+}
+function onOpDeptoChange(){ poblarOpResp(); renderOperacion(); }
+function limpiarOpFiltros(){
+  document.getElementById('op-f-depto').value='';
+  poblarOpResp();
+  document.getElementById('op-f-resp').value='';
+  renderOperacion();
+}
+// Re-renderiza solo las tarjetas de la pestaña Operación
+function renderOperacion(){ renderG(); renderH(); renderI(); renderN(); }
+
 /* ══ G: CARGA POR DEPARTAMENTO ══ */
 function renderG(){
-  const active=cfRows('g',RAW.filter(r=>
+  const active=opRows(RAW.filter(r=>
     r.est_ppto==='Aprobado'&&
     ['En Curso','Pendiente'].includes(r.est_proy)
   ));
@@ -1188,7 +1192,7 @@ function renderG(){
 /* ══ H: PRIORIDADES ALTAS ══ */
 function renderH(){
   const today=new Date();
-  const rows=cfRows('h',RAW.filter(r=>
+  const rows=opRows(RAW.filter(r=>
     r.prioridad==='Alta'&&
     r.est_ppto==='Aprobado'&&
     ['En Curso','Pendiente'].includes(r.est_proy)
@@ -1211,7 +1215,7 @@ function renderH(){
 
 /* ══ I: CAPACIDAD POR PERSONA ══ */
 function renderI(){
-  const active=cfRows('i',RAW.filter(r=>
+  const active=opRows(RAW.filter(r=>
     r.est_ppto==='Aprobado'&&
     ['En Curso','Pendiente'].includes(r.est_proy)
   ));
@@ -1235,7 +1239,7 @@ function renderI(){
 
 /* ══ J: TOP 10 MARCAS YTD ══ */
 function renderJ(){
-  const apr=cfRows('j',RAW.filter(r=>r.est_ppto==='Aprobado'&&inPeriodo(r.mes_sol)));
+  const apr=RAW.filter(r=>r.est_ppto==='Aprobado'&&inPeriodo(r.mes_sol));
   const byCliente=new Map();
   apr.forEach(r=>{
     const c=r.cliente||'—';
@@ -1304,7 +1308,7 @@ function renderL(){
 /* ══ M: RANKING VENDEDORES ══ */
 function renderM(){
   const bySeller=new Map();
-  cfRows('m',RAW.filter(r=>inPeriodo(r.mes_sol))).forEach(r=>{
+  RAW.filter(r=>inPeriodo(r.mes_sol)).forEach(r=>{
     const s=r.canal_int||'Sin ejecutivo';
     if(!bySeller.has(s)) bySeller.set(s,{leads:new Set(),apr:new Set(),rech:new Set(),monto:0});
     const d=bySeller.get(s);
@@ -1337,7 +1341,7 @@ function renderM(){
 function renderN(){
   const today=new Date(); today.setHours(0,0,0,0);
   const limit=new Date(today); limit.setDate(today.getDate()+14);
-  const rows=cfRows('n',RAW.filter(r=>
+  const rows=opRows(RAW.filter(r=>
     r.est_ppto==='Aprobado'&&
     ['En Curso','Pendiente'].includes(r.est_proy)&&
     r.fecha_lim&&
@@ -1365,7 +1369,7 @@ setInterval(loadData,5*60*1000);
 
 /* ══ K: ANÁLISIS DE RECHAZOS POR SERVICIO ══ */
 function renderK(){
-  const rech = cfRows('k', RAW.filter(r => r.est_ppto === 'Rechazado' && inPeriodo(r.mes_sol)));
+  const rech = RAW.filter(r => r.est_ppto === 'Rechazado' && inPeriodo(r.mes_sol));
   const bySvc = new Map();
   rech.forEach(r => {
     const s = r.svc_own || 'Sin servicio';
@@ -1403,7 +1407,7 @@ function renderK(){
 
 /* ══ L: PRICING COMPARATIVO POR SERVICIO ══ */
 function renderL(){
-  const apr = cfRows('l', RAW.filter(r => r.est_ppto === 'Aprobado'));
+  const apr = RAW.filter(r => r.est_ppto === 'Aprobado');
 
   // Agrupar por Servicio Owner → dentro de cada servicio agrupar por ID_Proyecto
   const bySvc = new Map();
@@ -1497,6 +1501,7 @@ function openDetail(key){
   document.getElementById('modal-title').textContent=cfg.title;
   document.getElementById('modal-sub').textContent=cfg.sub+((vSol&&!cfg.weekly)?' · '+vSol:'');
   document.getElementById('modal-search').value='';
+  poblarModalFiltros(MODAL_ROWS);
   renderModalRows(MODAL_ROWS);
   document.getElementById('modal-ov').classList.add('on');
   document.body.style.overflow='hidden';
@@ -1510,9 +1515,11 @@ function closeDetail(){
 function renderModalRows(rows){
   const tb=document.getElementById('modal-tbody');
   const cnt=document.getElementById('modal-count');
+  const foot=document.getElementById('modal-foot');
   if(!rows.length){
-    tb.innerHTML=`<tr><td colspan="6" class="empty">Sin registros</td></tr>`;
+    tb.innerHTML=`<tr><td colspan="8" class="empty">Sin registros</td></tr>`;
     cnt.textContent='0 registros';
+    foot.innerHTML=`<span>Sin registros</span><span class="mf-total">${fmt(0)}</span>`;
     return;
   }
   const total=rows.reduce((a,r)=>a+r.monto_ppto,0);
@@ -1522,20 +1529,61 @@ function renderModalRows(rows){
       <td>${r.canal_int||'—'}</td>
       <td style="font-weight:500">${r.cliente||'—'}</td>
       <td class="muted">${r.svc_own||'—'}</td>
+      <td><span class="pill pill-purple">${r.depto||'—'}</span></td>
+      <td class="muted">${r.responsable||'—'}</td>
       <td><span class="pill ${estPill(r.est_ppto)}">${r.est_ppto||'—'}</span></td>
       <td class="r" style="color:var(--teal);font-weight:600">${fmt(r.monto_ppto)}</td>
-    </tr>`).join('')+`
-    <tr class="tbl-total">
-      <td colspan="5"><b>Total · ${rows.length} proyecto${rows.length!==1?'s':''}</b></td>
-      <td class="r">${fmt(total)}</td>
-    </tr>`;
+    </tr>`).join('');
   cnt.textContent=rows.length+' registro'+(rows.length!==1?'s':'');
+  foot.innerHTML=`<span>Total · ${rows.length} proyecto${rows.length!==1?'s':''}</span><span class="mf-total">${fmt(total)}</span>`;
+}
+
+// Poblar el select de Departamento con los valores presentes en las filas del modal.
+// El select de Responsable se puebla aparte (en cascada según el departamento elegido).
+function poblarModalFiltros(rows){
+  const deptos=[...new Set(rows.map(r=>r.depto).filter(Boolean))].sort();
+  const selD=document.getElementById('modal-f-depto');
+  selD.innerHTML='<option value="">Todos los departamentos</option>'+
+    deptos.map(d=>`<option value="${d.replace(/"/g,'&quot;')}">${d}</option>`).join('');
+  selD.value='';
+  poblarModalResp();
+}
+
+// Poblar Responsable solo con los que existen dentro del departamento seleccionado
+// (o todos si no hay departamento elegido). Conserva la selección actual si sigue siendo válida.
+function poblarModalResp(){
+  const fd=document.getElementById('modal-f-depto').value;
+  const base=fd?MODAL_ROWS.filter(r=>r.depto===fd):MODAL_ROWS;
+  const resps=[...new Set(base.map(r=>r.responsable).filter(Boolean))].sort();
+  const selR=document.getElementById('modal-f-resp');
+  const cur=selR.value;
+  selR.innerHTML='<option value="">Todos los responsables</option>'+
+    resps.map(r=>`<option value="${r.replace(/"/g,'&quot;')}">${r}</option>`).join('');
+  selR.value=(cur&&resps.includes(cur))?cur:'';
+}
+
+// Al cambiar el departamento: refrescar opciones de responsable y re-filtrar
+function onModalDeptoChange(){
+  poblarModalResp();
+  filterModal();
+}
+
+function limpiarModalFiltros(){
+  document.getElementById('modal-search').value='';
+  document.getElementById('modal-f-depto').value='';
+  poblarModalResp();
+  document.getElementById('modal-f-resp').value='';
+  renderModalRows(MODAL_ROWS);
 }
 
 function filterModal(){
-  const q=document.getElementById('modal-search').value.trim().toLowerCase();
-  if(!q){ renderModalRows(MODAL_ROWS); return; }
-  const f=MODAL_ROWS.filter(r=>[r.cliente,r.svc_own,r.canal_int,r.est_ppto].some(x=>(x||'').toLowerCase().includes(q)));
+  const q =document.getElementById('modal-search').value.trim().toLowerCase();
+  const fd=document.getElementById('modal-f-depto').value;
+  const fr=document.getElementById('modal-f-resp').value;
+  let f=MODAL_ROWS;
+  if(fd) f=f.filter(r=>r.depto===fd);
+  if(fr) f=f.filter(r=>r.responsable===fr);
+  if(q)  f=f.filter(r=>[r.cliente,r.svc_own,r.canal_int,r.est_ppto].some(x=>(x||'').toLowerCase().includes(q)));
   renderModalRows(f);
 }
 
@@ -1554,17 +1602,21 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeDetail(); });
     </div>
     <div class="modal-tools">
       <input class="modal-search" id="modal-search" placeholder="Buscar cliente, servicio, canal o estatus..." oninput="filterModal()">
+      <select id="modal-f-depto" onchange="onModalDeptoChange()"><option value="">Todos los departamentos</option></select>
+      <select id="modal-f-resp" onchange="filterModal()"><option value="">Todos los responsables</option></select>
+      <button class="btn-clear-f" id="modal-clear" onclick="limpiarModalFiltros()">✕ Limpiar filtros</button>
       <span class="modal-count" id="modal-count"></span>
     </div>
     <div class="modal-body">
       <div class="tbl-wrap"><table>
         <thead><tr>
           <th>Fecha Solicitud</th><th>Canal Interno</th><th>Cliente</th>
-          <th>Servicio</th><th>Estatus PPTO</th><th class="r">Monto</th>
+          <th>Servicio</th><th>Departamento</th><th>Responsable</th><th>Estatus PPTO</th><th class="r">Monto</th>
         </tr></thead>
         <tbody id="modal-tbody"></tbody>
       </table></div>
     </div>
+    <div class="modal-foot" id="modal-foot"></div>
   </div>
 </div>
 
