@@ -1458,7 +1458,9 @@ function desempenoBy(field){
   rows.forEach(r=>{
     const k=(r[field]||'Sin asignar').trim()||'Sin asignar';
     if(!map.has(k)) map.set(k,{enCurso:new Set(),enRev:new Set(),pend:new Set(),comp:new Set(),atras:new Set(),onTime:0,onTotal:0});
-    const d=map.get(k); const id=(r.id||'').trim()||r.proyecto||('_'+Math.random());
+    // Unidad = involucramiento proyecto×departamento: así el trabajo sin responsable
+    // se acumula en "Sin asignar" y los totales de ambas tablas coinciden.
+    const d=map.get(k); const id=((r.id||'').trim()||r.proyecto||('_'+Math.random()))+'|'+(r.depto||'').trim();
     if(r.est_proy==='En Curso') d.enCurso.add(id);
     else if(r.est_proy==='En Revisión') d.enRev.add(id);
     else if(r.est_proy==='Pendiente') d.pend.add(id);
@@ -1468,7 +1470,7 @@ function desempenoBy(field){
   const list=[...map.entries()].map(([k,d])=>({
     k, enCurso:d.enCurso.size, enRev:d.enRev.size, pend:d.pend.size, comp:d.comp.size, atras:d.atras.size,
     pct: d.onTotal>0?Math.round(d.onTime/d.onTotal*100):null
-  })).sort((a,b)=>(b.enCurso+b.enRev)-(a.enCurso+a.enRev));
+  })).sort((a,b)=> a.k==='Sin asignar' ? 1 : b.k==='Sin asignar' ? -1 : a.k.localeCompare(b.k,'es'));
   // Total = suma de la carga de cada área (cada depto/responsable cuenta su propio
   // trabajo). Un proyecto que involucra a varias áreas cuenta en cada una, por eso el
   // total por Departamento y por Responsable pueden diferir: es correcto y esperado.
