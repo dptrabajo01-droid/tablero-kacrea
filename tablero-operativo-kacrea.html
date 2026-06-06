@@ -521,12 +521,12 @@ tbody tr:hover td{background:var(--surface2)}
   </div>
 
   <div class="full card">
-    <div class="card-hdr"><div><div class="card-title">Desempeño por Departamento</div><div class="card-sub">Carga activa, completados y cumplimiento de entregas (Fecha Entrega ≤ Fecha Límite)</div></div></div>
+    <div class="card-hdr"><div><div class="card-title">Desempeño por Departamento</div><div class="card-sub">Carga activa, completados y cumplimiento de entregas · el Total cuenta proyectos únicos</div></div></div>
     <div class="tbl-wrap"><table><thead><tr><th>Departamento</th><th class="r">En Curso</th><th class="r">En Revisión</th><th class="r">Pendientes</th><th class="r">Completados</th><th class="r">Atrasados</th><th class="r">% A Tiempo</th></tr></thead><tbody id="tbody-desp-depto"></tbody></table></div>
   </div>
 
   <div class="full card">
-    <div class="card-hdr"><div><div class="card-title">Desempeño por Responsable</div><div class="card-sub">Carga activa, completados y cumplimiento de entregas (Fecha Entrega ≤ Fecha Límite)</div></div></div>
+    <div class="card-hdr"><div><div class="card-title">Desempeño por Responsable</div><div class="card-sub">Carga activa, completados y cumplimiento de entregas · el Total cuenta proyectos únicos</div></div></div>
     <div class="tbl-wrap"><table><thead><tr><th>Responsable</th><th class="r">En Curso</th><th class="r">En Revisión</th><th class="r">Pendientes</th><th class="r">Completados</th><th class="r">Atrasados</th><th class="r">% A Tiempo</th></tr></thead><tbody id="tbody-desp-resp"></tbody></table></div>
   </div>
 
@@ -1455,26 +1455,28 @@ function desempenoBy(field){
   const today=new Date(); today.setHours(0,0,0,0);
   const rows=opRows(RAW.filter(r=>inSol(r.mes_sol)));
   const map=new Map();
+  const G={enCurso:new Set(),enRev:new Set(),pend:new Set(),comp:new Set(),atras:new Set()};
+  let gOn=0,gTot=0;
   rows.forEach(r=>{
     const k=(r[field]||'Sin asignar').trim()||'Sin asignar';
     if(!map.has(k)) map.set(k,{enCurso:new Set(),enRev:new Set(),pend:new Set(),comp:new Set(),atras:new Set(),onTime:0,onTotal:0});
     const d=map.get(k); const id=(r.id||'').trim()||r.proyecto||('_'+Math.random());
-    if(r.est_proy==='En Curso') d.enCurso.add(id);
-    else if(r.est_proy==='En Revisión') d.enRev.add(id);
-    else if(r.est_proy==='Pendiente') d.pend.add(id);
-    else if(r.est_proy==='Completado'){ d.comp.add(id); if(r.fecha_ent&&r.fecha_lim){ d.onTotal++; if(r.fecha_ent<=r.fecha_lim) d.onTime++; } }
-    if(['En Curso','En Revisión'].includes(r.est_proy)&&r.fecha_lim&&r.fecha_lim<today) d.atras.add(id);
+    if(r.est_proy==='En Curso'){ d.enCurso.add(id); G.enCurso.add(id); }
+    else if(r.est_proy==='En Revisión'){ d.enRev.add(id); G.enRev.add(id); }
+    else if(r.est_proy==='Pendiente'){ d.pend.add(id); G.pend.add(id); }
+    else if(r.est_proy==='Completado'){ d.comp.add(id); G.comp.add(id); if(r.fecha_ent&&r.fecha_lim){ d.onTotal++; gTot++; if(r.fecha_ent<=r.fecha_lim){ d.onTime++; gOn++; } } }
+    if(['En Curso','En Revisión'].includes(r.est_proy)&&r.fecha_lim&&r.fecha_lim<today){ d.atras.add(id); G.atras.add(id); }
   });
   const list=[...map.entries()].map(([k,d])=>({
     k, enCurso:d.enCurso.size, enRev:d.enRev.size, pend:d.pend.size, comp:d.comp.size, atras:d.atras.size,
     pct: d.onTotal>0?Math.round(d.onTime/d.onTotal*100):null
   })).sort((a,b)=>(b.enCurso+b.enRev)-(a.enCurso+a.enRev));
-  // Totales: suma de columnas · % a tiempo global (sobre completados con ambas fechas)
-  let gOn=0,gTot=0; map.forEach(d=>{ gOn+=d.onTime; gTot+=d.onTotal; });
+  // Total = proyectos ÚNICOS por estatus (deduplicados globalmente), NO la suma de filas:
+  // un proyecto con servicios en varias áreas aparece en la fila de cada área, pero en el
+  // total cuenta una sola vez. Así ambas tablas coinciden y cuadran con las tarjetas.
   const totals={
-    enCurso:list.reduce((a,r)=>a+r.enCurso,0), enRev:list.reduce((a,r)=>a+r.enRev,0),
-    pend:list.reduce((a,r)=>a+r.pend,0), comp:list.reduce((a,r)=>a+r.comp,0),
-    atras:list.reduce((a,r)=>a+r.atras,0), pct: gTot>0?Math.round(gOn/gTot*100):null
+    enCurso:G.enCurso.size, enRev:G.enRev.size, pend:G.pend.size, comp:G.comp.size, atras:G.atras.size,
+    pct: gTot>0?Math.round(gOn/gTot*100):null
   };
   return {list, totals};
 }
