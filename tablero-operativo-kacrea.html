@@ -138,10 +138,12 @@ select:disabled{opacity:0.4;cursor:not-allowed}
 .cal-chip{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--purple);border-radius:6px;padding:5px 7px;cursor:default}
 .cal-chip-t{font-size:11px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cal-chip-s{font-size:9px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.cal-chip-svc{font-size:9px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;font-style:italic}
 .cal-chip-lim{font-size:9px;font-family:'DM Mono',monospace;color:var(--amber);margin-top:3px;font-weight:500}
 .cal-tag{display:inline-block;font-size:8px;font-weight:700;padding:1px 6px;border-radius:100px;margin-top:4px;text-transform:uppercase;letter-spacing:.03em}
 .cal-tag-done{background:var(--green-dim);color:var(--green)}
 .cal-tag-late{background:var(--red-dim);color:var(--red)}
+.cal-tag-soon{background:var(--amber-dim);color:var(--amber)}
 .cal-legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border)}
 .cal-leg-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted)}
 .cal-leg-dot{width:9px;height:9px;border-radius:3px;flex-shrink:0}
@@ -1424,7 +1426,11 @@ function renderCalendar(){
     if(done) t+='<span class="cal-tag cal-tag-done">Completado</span>';
     if(r.fecha_lim){
       const ref=done?r.fecha_ent:today;
-      if(ref&&ref>r.fecha_lim) t+=`<span class="cal-tag cal-tag-late">Retrasado ${daysBetween(r.fecha_lim,ref)}d</span>`;
+      if(ref&&ref>r.fecha_lim){ t+=`<span class="cal-tag cal-tag-late">Retrasado ${daysBetween(r.fecha_lim,ref)}d</span>`; }
+      else if(!done){
+        const dias=daysBetween(today,r.fecha_lim);   // días restantes hasta el límite
+        if(dias>=0&&dias<=7) t+=`<span class="cal-tag cal-tag-soon">${dias===0?'Vence hoy':'Faltan '+dias+'d'}</span>`;
+      }
     }
     return t;
   };
@@ -1439,6 +1445,7 @@ function renderCalendar(){
         <div class="cal-chip" style="border-left-color:${deptoColor(r.depto)}" title="${((r.proyecto||r.cliente||'')+(r.depto?' · '+r.depto:'')+(r.responsable?' · '+r.responsable:'')).replace(/"/g,'')}">
           <div class="cal-chip-t">${r.proyecto||r.cliente||'—'}</div>
           <div class="cal-chip-s">${r.cliente||''}${r.responsable?' · '+r.responsable:''}</div>
+          <div class="cal-chip-svc">${r.svc_own||'—'}${r.svc_asoc?` · ${r.svc_asoc}`:''}</div>
           <div class="cal-chip-lim">Límite: ${r.fecha_lim?r.fecha_lim.toLocaleDateString('es-MX'):'—'}</div>
           ${tag(r)}
         </div>`).join(''):'<div class="cal-empty">—</div>'}</div>
