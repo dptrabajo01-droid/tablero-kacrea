@@ -123,6 +123,16 @@ select:disabled{opacity:0.4;cursor:not-allowed}
 @media(max-width:768px){.op-kpi-grid{grid-template-columns:repeat(2,1fr);gap:8px}}
 @media(max-width:400px){.op-kpi-grid{grid-template-columns:1fr 1fr}}
 /* CALENDARIO DE GESTIÓN */
+.cal-controls{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.cal-modes{display:inline-flex;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:2px;gap:2px}
+.cal-mode-btn{border:none;background:none;font-size:11px;font-weight:600;color:var(--muted);padding:4px 11px;border-radius:6px;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif}
+.cal-mode-btn:hover{color:var(--text)}
+.cal-mode-btn.active{background:var(--surface);color:var(--purple);box-shadow:0 1px 2px rgba(15,23,42,0.1)}
+.cal-type{display:inline-block;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:1px 6px;border-radius:4px;margin-bottom:4px;margin-right:4px}
+.cal-type-rev{background:var(--blue-dim);color:var(--blue)}
+.cal-type-ent{background:var(--green-dim);color:var(--green)}
+.cal-chip-ent{background:rgba(22,163,74,0.045)}
+.cal-tag-early{background:var(--blue-dim);color:var(--blue)}
 .cal-nav{display:flex;align-items:center;gap:6px}
 .cal-btn{background:var(--surface);border:1px solid var(--border-md);border-radius:var(--r-sm);min-width:28px;height:28px;padding:0 8px;cursor:pointer;font-size:14px;color:var(--muted);transition:all .2s;display:inline-flex;align-items:center;justify-content:center}
 .cal-btn:hover{background:var(--surface2);color:var(--text)}
@@ -140,6 +150,11 @@ select:disabled{opacity:0.4;cursor:not-allowed}
 .cal-chip-s{font-size:9px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
 .cal-chip-svc{font-size:9px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;font-style:italic}
 .cal-chip-lim{font-size:9px;font-family:'DM Mono',monospace;color:var(--amber);margin-top:3px;font-weight:500}
+.cal-desc-btn{display:inline-flex;align-items:center;gap:4px;margin-top:5px;background:none;border:none;padding:0;font-family:'DM Sans',sans-serif;font-size:9px;font-weight:600;color:var(--purple);cursor:pointer}
+.cal-desc-arr{transition:transform .15s;font-size:8px}
+.cal-desc-btn.open .cal-desc-arr{transform:rotate(180deg)}
+.cal-desc{display:none;margin-top:4px;padding:5px 7px;background:var(--surface2);border-radius:5px;font-size:9px;color:var(--muted);line-height:1.45;white-space:normal}
+.cal-desc.open{display:block}
 .cal-tag{display:inline-block;font-size:8px;font-weight:700;padding:1px 6px;border-radius:100px;margin-top:4px;text-transform:uppercase;letter-spacing:.03em}
 .cal-tag-done{background:var(--green-dim);color:var(--green)}
 .cal-tag-late{background:var(--red-dim);color:var(--red)}
@@ -491,12 +506,19 @@ tbody tr:hover td{background:var(--surface2)}
 
   <div class="full card">
     <div class="card-hdr">
-      <div><div class="card-title">Calendario de Gestión — Semana</div><div class="card-sub">Proyectos a gestionar según su Fecha de Revisión</div></div>
-      <div class="cal-nav">
-        <button class="cal-btn" onclick="calWeek(-1)" aria-label="Semana anterior">‹</button>
-        <span class="cal-range" id="op-cal-range">—</span>
-        <button class="cal-btn" onclick="calWeek(1)" aria-label="Semana siguiente">›</button>
-        <button class="cal-btn cal-today-btn" onclick="calWeek(0,true)">Hoy</button>
+      <div><div class="card-title">Calendario de Gestión — Semana</div><div class="card-sub">Gestión (Fecha de Revisión) y entregas (Fecha de Entrega) de la semana</div></div>
+      <div class="cal-controls">
+        <div class="cal-modes">
+          <button class="cal-mode-btn" data-mode="ambos" onclick="calMode('ambos')">Ambos</button>
+          <button class="cal-mode-btn" data-mode="revision" onclick="calMode('revision')">Revisión</button>
+          <button class="cal-mode-btn" data-mode="entrega" onclick="calMode('entrega')">Entrega</button>
+        </div>
+        <div class="cal-nav">
+          <button class="cal-btn" onclick="calWeek(-1)" aria-label="Semana anterior">‹</button>
+          <span class="cal-range" id="op-cal-range">—</span>
+          <button class="cal-btn" onclick="calWeek(1)" aria-label="Semana siguiente">›</button>
+          <button class="cal-btn cal-today-btn" onclick="calWeek(0,true)">Hoy</button>
+        </div>
       </div>
     </div>
     <div id="op-cal"><div class="sk" style="height:140px;border-radius:8px"></div></div>
@@ -568,6 +590,7 @@ function detectCols(headers){
     proyecto:    (h.indexOf('proyecto')>=0 ? h.indexOf('proyecto') : f(['proyecto'])),
     svc_own:     f(['servicio owner','servicio_owner','servicio']),
     svc_asoc:    f(['servicio asociado']),
+    descripcion: f(['descripción','descripcion']),
     est_ppto:    f(['estatus de ppto','estatus ppto']),
     mes_ar:      f(['mes de a/r','mes a/r']),
     fecha_ar:    f(['fecha de a/r','fecha a/r']),
@@ -625,6 +648,7 @@ async function loadData(){
         proyecto:    get(c.proyecto),
         svc_own:     get(c.svc_own),
         svc_asoc:    get(c.svc_asoc),
+        descripcion: get(c.descripcion),
         est_ppto:    get(c.est_ppto),
         mes_ar:      get(c.mes_ar),
         fecha_ar:    parseDate(get(c.fecha_ar)),
@@ -1404,8 +1428,9 @@ function renderLicitacion(){
 }
 
 /* ══ CALENDARIO DE GESTIÓN (Lun–Vie · por Fecha de Revisión) ══ */
-let CAL_OFFSET=0;
+let CAL_OFFSET=0, CAL_MODE='ambos';
 function calWeek(delta, reset){ if(reset) CAL_OFFSET=0; else CAL_OFFSET+=delta; renderCalendar(); }
+function calMode(m){ CAL_MODE=m; renderCalendar(); }
 function mondayOf(date){ const t=new Date(date); t.setHours(0,0,0,0); const day=t.getDay(); t.setDate(t.getDate()-(day===0?6:day-1)); return t; }
 function sameDay(a,b){ return !!a&&!!b&&a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate(); }
 function renderCalendar(){
@@ -1414,13 +1439,17 @@ function renderCalendar(){
   const days=[]; for(let i=0;i<5;i++){ const d=new Date(base); d.setDate(base.getDate()+i); days.push(d); }
   const fmtR=d=>d.toLocaleDateString('es-MX',{day:'2-digit',month:'short'});
   const rangeEl=document.getElementById('op-cal-range'); if(rangeEl) rangeEl.textContent=`${fmtR(days[0])} – ${fmtR(days[4])}`;
-  const pool=opRows(RAW.filter(r=>r.fecha_rev));
+  document.querySelectorAll('.cal-mode-btn').forEach(b=>b.classList.toggle('active', b.dataset.mode===CAL_MODE));
+
+  const showRev=CAL_MODE!=='entrega', showEnt=CAL_MODE!=='revision';
+  const poolRev=showRev?opRows(RAW.filter(r=>r.fecha_rev)):[];
+  const poolEnt=showEnt?opRows(RAW.filter(r=>r.fecha_ent)):[];
   const nombres=['Lunes','Martes','Miércoles','Jueves','Viernes'];
   const deptosWeek=new Set();
-  // Etiquetas: Completado (verde) y/o Retrasado Xd (rojo). El retraso se mide
-  // contra la Fecha Límite: si está Completado → vs Fecha de Entrega; si sigue
-  // activo → vs hoy. Un proyecto puede mostrar ambas (completado pero tarde).
-  const tag=r=>{
+  const fD=d=>d?d.toLocaleDateString('es-MX'):'—';
+
+  // GESTIÓN (revisión): Completado / Retrasado / Faltan, medido contra la Fecha Límite
+  const revTag=r=>{
     let t='';
     const done=r.est_proy==='Completado';
     if(done) t+='<span class="cal-tag cal-tag-done">Completado</span>';
@@ -1428,27 +1457,55 @@ function renderCalendar(){
       const ref=done?r.fecha_ent:today;
       if(ref&&ref>r.fecha_lim){ t+=`<span class="cal-tag cal-tag-late">Retrasado ${daysBetween(r.fecha_lim,ref)}d</span>`; }
       else if(!done){
-        const dias=daysBetween(today,r.fecha_lim);   // días restantes hasta el límite
+        const dias=daysBetween(today,r.fecha_lim);
         if(dias>=0&&dias<=7) t+=`<span class="cal-tag cal-tag-soon">${dias===0?'Vence hoy':'Faltan '+dias+'d'}</span>`;
       }
     }
     return t;
   };
+  // ENTREGA: A tiempo / Anticipado / Tarde, comparando Fecha de Entrega vs Fecha Límite
+  const entTag=r=>{
+    if(!r.fecha_lim||!r.fecha_ent) return '';
+    if(r.fecha_ent>r.fecha_lim) return `<span class="cal-tag cal-tag-late">Tarde ${daysBetween(r.fecha_lim,r.fecha_ent)}d</span>`;
+    if(r.fecha_ent<r.fecha_lim) return `<span class="cal-tag cal-tag-early">Anticipado ${daysBetween(r.fecha_ent,r.fecha_lim)}d</span>`;
+    return '<span class="cal-tag cal-tag-done">A tiempo</span>';
+  };
+  const chip=(r,type)=>{
+    if(r.depto) deptosWeek.add(r.depto);
+    const isEnt=(type==='ent'||type==='both');
+    let typeTag;
+    if(type==='both') typeTag='<span class="cal-type cal-type-rev">Revisión</span><span class="cal-type cal-type-ent">Entregado</span>';
+    else if(type==='ent') typeTag='<span class="cal-type cal-type-ent">Entregado</span>';
+    else typeTag='<span class="cal-type cal-type-rev">Revisión</span>';
+    const dateLine=isEnt
+      ? `<div class="cal-chip-lim">Entregado: ${fD(r.fecha_ent)} · Límite: ${fD(r.fecha_lim)}</div>`
+      : `<div class="cal-chip-lim">Límite: ${fD(r.fecha_lim)}</div>`;
+    return `<div class="cal-chip ${isEnt?'cal-chip-ent':'cal-chip-rev'}" style="border-left-color:${deptoColor(r.depto)}" title="${((r.proyecto||r.cliente||'')+(r.depto?' · '+r.depto:'')+(r.responsable?' · '+r.responsable:'')).replace(/"/g,'')}">
+      ${typeTag}
+      <div class="cal-chip-t">${r.proyecto||r.cliente||'—'}</div>
+      <div class="cal-chip-s">${r.cliente||''}${r.responsable?' · '+r.responsable:''}</div>
+      <div class="cal-chip-svc">${r.svc_own||'—'}${r.svc_asoc?` · ${r.svc_asoc}`:''}</div>
+      ${dateLine}
+      ${isEnt?entTag(r):revTag(r)}
+      ${r.descripcion?`<button class="cal-desc-btn" onclick="event.stopPropagation();this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">Descripción <span class="cal-desc-arr">▾</span></button><div class="cal-desc">${(r.descripcion||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>`:''}
+    </div>`;
+  };
+  // Misma fila lógica (proyecto + servicio) revisada y entregada el mismo día → una sola tarjeta
+  const keyOf=r=>(r.id||'').trim()+'|'+(r.svc_own||'')+'|'+(r.svc_asoc||'');
+
   let html='<div class="cal-grid">';
   days.forEach((d,i)=>{
     const isToday=sameDay(d,today);
-    const items=pool.filter(r=>sameDay(r.fecha_rev,d));
-    items.forEach(r=>{ if(r.depto) deptosWeek.add(r.depto); });
+    const revRows=showRev?poolRev.filter(r=>sameDay(r.fecha_rev,d)):[];
+    const entRows=showEnt?poolEnt.filter(r=>sameDay(r.fecha_ent,d)):[];
+    const entByKey=new Map(); entRows.forEach(r=>entByKey.set(keyOf(r),r));
+    const usedEnt=new Set();
+    const evs=[];
+    revRows.forEach(r=>{ const k=keyOf(r); if(showEnt&&entByKey.has(k)){ evs.push([entByKey.get(k),'both']); usedEnt.add(k); } else evs.push([r,'rev']); });
+    entRows.forEach(r=>{ if(!usedEnt.has(keyOf(r))) evs.push([r,'ent']); });
     html+=`<div class="cal-day${isToday?' cal-today-col':''}">
       <div class="cal-day-hdr"><span>${nombres[i]}</span><span class="cal-day-num">${d.getDate()}</span></div>
-      <div class="cal-day-body">${items.length?items.map(r=>`
-        <div class="cal-chip" style="border-left-color:${deptoColor(r.depto)}" title="${((r.proyecto||r.cliente||'')+(r.depto?' · '+r.depto:'')+(r.responsable?' · '+r.responsable:'')).replace(/"/g,'')}">
-          <div class="cal-chip-t">${r.proyecto||r.cliente||'—'}</div>
-          <div class="cal-chip-s">${r.cliente||''}${r.responsable?' · '+r.responsable:''}</div>
-          <div class="cal-chip-svc">${r.svc_own||'—'}${r.svc_asoc?` · ${r.svc_asoc}`:''}</div>
-          <div class="cal-chip-lim">Límite: ${r.fecha_lim?r.fecha_lim.toLocaleDateString('es-MX'):'—'}</div>
-          ${tag(r)}
-        </div>`).join(''):'<div class="cal-empty">—</div>'}</div>
+      <div class="cal-day-body">${evs.length?evs.map(([r,t])=>chip(r,t)).join(''):'<div class="cal-empty">—</div>'}</div>
     </div>`;
   });
   html+='</div>';
