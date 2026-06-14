@@ -147,7 +147,7 @@ select:disabled{opacity:0.4;cursor:not-allowed}
 .cal-btn:hover{background:var(--surface2);color:var(--text)}
 .cal-today-btn{font-size:11px;font-weight:600;color:var(--purple)}
 .cal-range{font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);min-width:128px;text-align:center}
-.cal-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;max-height:520px;overflow-y:auto;align-items:start}
+.cal-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;max-height:520px;overflow-y:auto;align-items:start}
 .cal-day{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);display:flex;flex-direction:column}
 .cal-day.cal-today-col{border-color:var(--purple);box-shadow:0 0 0 1px var(--purple)}
 .cal-day-hdr{position:sticky;top:0;z-index:3;display:flex;align-items:center;justify-content:space-between;padding:6px 9px;background:var(--surface3);font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;border-radius:var(--r-sm) var(--r-sm) 0 0}
@@ -158,7 +158,7 @@ select:disabled{opacity:0.4;cursor:not-allowed}
 .cal-chip:hover{box-shadow:0 2px 10px rgba(15,23,42,0.1);transform:translateY(-1px)}
 .cal-evtype{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--faint)}
 .cal-flag{font-size:12px;line-height:1}
-.pf-alta{color:var(--red)} .pf-media{color:var(--amber)} .pf-baja{color:var(--faint)}
+.pf-alta{color:var(--red)} .pf-media{color:#3B82F6} .pf-baja{color:var(--faint)}
 .cal-state{display:inline-block;font-size:9px;font-weight:700;padding:2px 8px;border-radius:100px;margin-top:6px;white-space:nowrap}
 .st-grey{background:var(--surface3);color:var(--muted)}
 .st-amber{background:var(--amber-dim);color:var(--amber)}
@@ -602,7 +602,7 @@ tbody tr:hover td{background:var(--surface2)}
         <label class="due-days">≤ <select id="ag-due-days" onchange="setDueDays(this.value)"><option>3</option><option selected>7</option><option>15</option></select> días</label>
       </div>
     </div>
-    <div class="tbl-wrap ag-scroll"><table><thead><tr><th>Responsable</th><th>Departamento</th><th>Proyecto</th><th>Servicio</th><th>Cliente</th><th>Prioridad</th><th class="r">Fecha Revisión</th><th class="r">Fecha Límite</th><th>Estado</th><th>Días</th></tr></thead><tbody id="tbody-agenda"></tbody></table></div>
+    <div class="tbl-wrap ag-scroll"><table><thead><tr><th>Responsable</th><th>Departamento</th><th>Proyecto</th><th>Servicio</th><th>Cliente</th><th>Estado</th><th class="r">F. Inicio</th><th class="r">F. Revisión</th><th class="r">Fecha Límite</th><th>Días</th></tr></thead><tbody id="tbody-agenda"></tbody></table></div>
   </div>
 
   <div class="full card">
@@ -1441,17 +1441,16 @@ function renderAgenda(){
     const dias=r.fecha_lim?daysBetween(today,r.fecha_lim):null;
     const col=dias===null?'pill-gray':dias<0?'pill-red':dias<=7?'pill-amber':'pill-green';
     const label=dias===null?'Sin fecha':dias<0?`${Math.abs(dias)}d atraso`:dias===0?'Hoy':dias+'d';
-    const prioCol=r.prioridad==='Alta'?'pill-red':r.prioridad==='Media'?'pill-amber':'pill-gray';
     return`<tr>
-      <td class="muted">${r.responsable||'—'}</td>
+      <td class="muted">${calPrioFlag(r)} ${r.responsable||'—'}</td>
       <td>${deptoPill(r.depto)}</td>
       <td style="font-weight:500;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.proyecto||'—'}</td>
       <td class="muted">${r.svc_own||'—'}${r.svc_asoc?` · ${r.svc_asoc}`:''}</td>
       <td class="muted">${r.cliente||'—'}</td>
-      <td>${r.prioridad?`<span class="pill ${prioCol}">${r.prioridad}</span>`:'—'}</td>
+      <td><span class="pill ${r.est_proy==='En Revisión'?'pill-purple':'pill-blue'}">${r.est_proy}</span></td>
+      <td class="r muted">${r.fecha_ini?r.fecha_ini.toLocaleDateString('es-MX'):'—'}</td>
       <td class="r muted">${r.fecha_rev?r.fecha_rev.toLocaleDateString('es-MX'):'—'}</td>
       <td class="r muted">${r.fecha_lim?r.fecha_lim.toLocaleDateString('es-MX'):'—'}</td>
-      <td><span class="pill ${r.est_proy==='En Revisión'?'pill-purple':'pill-blue'}">${r.est_proy}</span></td>
       <td><span class="pill ${col}">${label}</span></td>
     </tr>`;
   }).join(''):`<tr><td colspan="10" class="empty">Sin proyectos En Curso o En Revisión</td></tr>`;
@@ -1484,7 +1483,7 @@ function renderLicitacion(){
   groups.forEach((g,gi)=>{
     const rs=g.rows, multi=rs.length>1, head=rs[0], key='lic'+gi;
     html+=`<tr class="grp-parent${multi?' has-children':''}"${multi?` onclick="toggleGroup('${key}')"`:''}>
-      <td style="font-weight:500">${multi?`<span class="grp-arrow" id="arr-${key}">▶</span>`:'<span class="grp-spacer"></span>'}${head.proyecto||'—'}${multi?` <span class="grp-badge">${rs.length}</span>`:''}</td>
+      <td style="font-weight:500">${multi?`<span class="grp-arrow" id="arr-${key}">▶</span>`:'<span class="grp-spacer"></span>'}${calPrioFlag(head)} ${head.proyecto||'—'}${multi?` <span class="grp-badge">${rs.length}</span>`:''}</td>
       <td class="muted">${head.cliente||'—'}</td>
       <td class="muted">${pick(rs,'svc_own')}</td>
       <td class="muted">${pick(rs,'responsable')}</td>
@@ -1496,7 +1495,7 @@ function renderLicitacion(){
     if(multi){
       rs.forEach(r=>{
         html+=`<tr class="grp-child child-${key}" style="display:none">
-          <td class="muted" style="padding-left:30px">${r.proyecto||'—'}</td>
+          <td class="muted" style="padding-left:30px">${calPrioFlag(r)} ${r.proyecto||'—'}</td>
           <td class="muted">${r.cliente||'—'}</td>
           <td class="muted">${r.svc_own||'—'}${r.svc_asoc?` · ${r.svc_asoc}`:''}</td>
           <td class="muted">${r.responsable||'—'}</td>
@@ -1596,10 +1595,11 @@ function renderCalendar(){
     const tipo=type==='ent'?'Entrega':type==='both'?'Rev.+Entrega':'Revisión';
     return `<div class="cal-chip" style="border-left-color:${deptoColor(r.depto)}" onclick="openCalDetail(${idx})" title="Ver detalle del proyecto">
       <div class="cal-chip-top"><span class="cal-evtype">${tipo}</span>${calPrioFlag(r)}</div>
-      <div class="cal-chip-t">${r.proyecto||r.cliente||'—'}</div>
+      <div class="cal-chip-t">${r.proyecto||r.svc_own||r.cliente||'—'}</div>
       <div class="cal-chip-s">${r.cliente||''}${r.responsable?' · '+r.responsable:''}</div>
+      ${r.svc_asoc?`<div class="cal-chip-svc">${r.svc_asoc}</div>`:''}
       <div class="cal-state ${st.cls}">${st.text}</div>
-      ${r.descripcion?`<div class="cal-chip-desc">${(r.descripcion||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>`:''}
+      ${r.descripcion?`<button class="cal-desc-btn" onclick="event.stopPropagation();this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">Descripción <span class="cal-desc-arr">▾</span></button><div class="cal-desc">${(r.descripcion||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>`:''}
     </div>`;
   };
   // Misma fila lógica (proyecto + servicio) revisada y entregada el mismo día → una sola tarjeta
