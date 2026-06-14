@@ -124,6 +124,7 @@ select:disabled{opacity:0.4;cursor:not-allowed}
 @media(max-width:400px){.op-kpi-grid{grid-template-columns:1fr 1fr}}
 /* CALENDARIO DE GESTIÓN */
 .cal-controls{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.cal-due-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border)}
 .cal-modes{display:inline-flex;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:2px;gap:2px}
 .cal-mode-btn{border:none;background:none;font-size:11px;font-weight:600;color:var(--muted);padding:4px 11px;border-radius:6px;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif}
 .cal-mode-btn:hover{color:var(--text)}
@@ -136,6 +137,9 @@ select:disabled{opacity:0.4;cursor:not-allowed}
 .cal-prio-baja{background:var(--green-dim);color:var(--green)}
 .cal-type-rev{background:var(--blue-dim);color:var(--blue)}
 .cal-type-ent{background:var(--green-dim);color:var(--green)}
+.cal-type-done{background:var(--green-dim);color:var(--green)}
+.cal-type-overdue{background:var(--red-dim);color:var(--red)}
+.cal-type-toent{background:var(--amber-dim);color:var(--amber)}
 .cal-chip-ent{background:rgba(22,163,74,0.045)}
 .cal-tag-early{background:var(--blue-dim);color:var(--blue)}
 .cal-nav{display:flex;align-items:center;gap:6px}
@@ -143,14 +147,40 @@ select:disabled{opacity:0.4;cursor:not-allowed}
 .cal-btn:hover{background:var(--surface2);color:var(--text)}
 .cal-today-btn{font-size:11px;font-weight:600;color:var(--purple)}
 .cal-range{font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);min-width:128px;text-align:center}
-.cal-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
-.cal-day{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);min-height:120px;display:flex;flex-direction:column;overflow:hidden}
+.cal-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;max-height:520px;overflow-y:auto;align-items:start}
+.cal-day{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);display:flex;flex-direction:column}
 .cal-day.cal-today-col{border-color:var(--purple);box-shadow:0 0 0 1px var(--purple)}
-.cal-day-hdr{display:flex;align-items:center;justify-content:space-between;padding:6px 9px;background:var(--surface3);font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.cal-day-hdr{position:sticky;top:0;z-index:3;display:flex;align-items:center;justify-content:space-between;padding:6px 9px;background:var(--surface3);font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;border-radius:var(--r-sm) var(--r-sm) 0 0}
 .cal-day.cal-today-col .cal-day-hdr{background:var(--purple);color:#fff}
 .cal-day-num{font-family:'DM Mono',monospace;font-size:11px}
 .cal-day-body{padding:6px;display:flex;flex-direction:column;gap:5px;flex:1}
-.cal-chip{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--purple);border-radius:6px;padding:5px 7px;cursor:default}
+.cal-chip{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--purple);border-radius:6px;padding:6px 8px;cursor:pointer;transition:box-shadow .15s,transform .1s}
+.cal-chip:hover{box-shadow:0 2px 10px rgba(15,23,42,0.1);transform:translateY(-1px)}
+.cal-evtype{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--faint)}
+.cal-flag{font-size:12px;line-height:1}
+.pf-alta{color:var(--red)} .pf-media{color:var(--amber)} .pf-baja{color:var(--faint)}
+.cal-state{display:inline-block;font-size:9px;font-weight:700;padding:2px 8px;border-radius:100px;margin-top:6px;white-space:nowrap}
+.st-grey{background:var(--surface3);color:var(--muted)}
+.st-amber{background:var(--amber-dim);color:var(--amber)}
+.st-red{background:var(--red-dim);color:var(--red)}
+.st-green{background:var(--green-dim);color:var(--green)}
+.cal-chip-desc{font-size:9px;color:var(--muted);margin-top:5px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.due-badge{display:inline-block;font-size:9px;font-weight:700;background:var(--surface3);color:var(--muted);border-radius:100px;padding:0 5px;margin-left:3px;min-width:15px;text-align:center}
+.due-chip.active .due-badge{background:rgba(255,255,255,0.28);color:#fff}
+.due-chip[data-due="vencidos"].has-alert .due-badge{background:var(--red);color:#fff}
+.due-chip[data-due="vencidos"].has-alert{box-shadow:inset 0 0 0 1px var(--red)}
+/* Detalle de tarjeta del calendario (clic) */
+.cal-detail-ov{position:fixed;inset:0;background:rgba(15,23,42,0.55);backdrop-filter:blur(2px);z-index:600;display:none;align-items:center;justify-content:center;padding:20px}
+.cal-detail-ov.on{display:flex}
+.cal-detail{background:var(--surface);border-radius:var(--r);box-shadow:0 24px 70px rgba(15,23,42,0.32);width:100%;max-width:440px;padding:22px;position:relative;animation:modalIn .2s ease}
+.cd-evtype{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--purple)}
+.cd-title{font-size:17px;font-weight:600;letter-spacing:-.3px;margin-top:2px;padding-right:30px}
+.cd-sub{font-size:12px;color:var(--muted);margin-top:3px}
+.cd-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;margin-top:4px}
+.cd-grid>div{display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--text)}
+.cd-k{font-size:9px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.05em}
+.cd-desc{margin-top:14px;font-size:12px}
+.cd-desc p{margin-top:3px;color:var(--text);line-height:1.5}
 .cal-chip-t{font-size:11px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cal-chip-s{font-size:9px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
 .cal-chip-svc{font-size:9px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;font-style:italic}
@@ -168,7 +198,7 @@ select:disabled{opacity:0.4;cursor:not-allowed}
 .cal-leg-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted)}
 .cal-leg-dot{width:9px;height:9px;border-radius:3px;flex-shrink:0}
 .cal-empty{font-size:11px;color:var(--faint);text-align:center;margin:auto 0}
-@media(max-width:768px){.cal-grid{grid-template-columns:1fr;gap:6px}.cal-day{min-height:auto}.cal-range{min-width:auto}}
+@media(max-width:768px){.cal-grid{grid-template-columns:1fr;gap:6px;max-height:460px}.cal-range{min-width:auto}}
 
 /* TABLES */
 .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;width:100%}
@@ -340,6 +370,22 @@ tbody tr:hover td{background:var(--surface2)}
 .modal-body table{min-width:820px}
 .modal-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 22px;border-top:1px solid var(--border-md);background:var(--surface2);flex-shrink:0;font-size:13px;font-weight:700;color:var(--text)}
 .modal-foot .mf-total{color:var(--teal);font-family:'DM Mono',monospace;font-size:14px}
+/* BARRA DE VENCIMIENTO (modal Operación + Agenda) */
+.modal-due-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 22px;border-bottom:1px solid var(--border);background:var(--surface2)}
+.modal-due-sum{font-size:11px;display:inline-flex;gap:10px;flex-wrap:wrap}
+.due-stat{font-weight:600;white-space:nowrap}
+.due-venc{color:var(--red)} .due-pv{color:var(--amber)}
+.due-chips{display:inline-flex;background:var(--surface);border:1px solid var(--border-md);border-radius:var(--r-sm);padding:2px;gap:2px}
+.due-chip{border:none;background:none;font-size:11px;font-weight:600;color:var(--muted);padding:4px 10px;border-radius:6px;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap}
+.due-chip:hover{color:var(--text)}
+.due-chip.active{background:var(--purple);color:#fff}
+.due-days{font-size:11px;color:var(--muted);display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.due-days select{padding:3px 20px 3px 7px;font-size:11px;min-height:auto}
+.ag-due-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+/* Agenda con altura fija (~10 filas) y scroll vertical */
+.ag-scroll{max-height:440px;overflow-y:auto}
+.ag-scroll thead th{position:sticky;top:0;z-index:2}
+@media(max-width:768px){.modal-due-bar{padding:8px 16px}.ag-due-controls{width:100%;margin-top:8px}}
 /* MODAL — grupos expandibles por proyecto */
 .grp-parent.has-children{cursor:pointer}
 .grp-parent.has-children:hover td{background:var(--surface2)}
@@ -526,17 +572,37 @@ tbody tr:hover td{background:var(--surface2)}
         </div>
       </div>
     </div>
+    <div class="cal-due-bar" id="cal-due-row">
+      <span class="f-label">Vencimiento</span>
+      <div class="due-chips">
+        <button class="due-chip active" data-due="todos" onclick="setCalDue('todos')">Todos <span class="due-badge" id="due-cnt-todos">0</span></button>
+        <button class="due-chip" data-due="porvencer" onclick="setCalDue('porvencer')">Por vencer <span class="due-badge" id="due-cnt-porvencer">0</span></button>
+        <button class="due-chip" data-due="vencidos" onclick="setCalDue('vencidos')">Vencidos <span class="due-badge" id="due-cnt-vencidos">0</span></button>
+      </div>
+      <label class="due-days">≤ <select id="cal-due-days" onchange="setDueDays(this.value)"><option>3</option><option selected>7</option><option>15</option></select> días</label>
+    </div>
     <div id="op-cal"><div class="sk" style="height:140px;border-radius:8px"></div></div>
   </div>
 
   <div class="full card">
     <div class="card-hdr"><div><div class="card-title">Proceso de Licitación</div><div class="card-sub">Proyectos en proceso de licitación · oportunidades abiertas</div></div></div>
-    <div class="tbl-wrap"><table><thead><tr><th>Proyecto</th><th>Cliente</th><th>Servicio</th><th>Responsable</th><th>Depto</th><th class="r">Fecha Límite</th><th class="r">Monto</th></tr></thead><tbody id="tbody-lic"></tbody></table></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Proyecto</th><th>Cliente</th><th>Servicio</th><th>Responsable</th><th>Depto</th><th class="r">F. Revisión</th><th class="r">F. Entrega</th><th class="r">Fecha Límite</th></tr></thead><tbody id="tbody-lic"></tbody></table></div>
   </div>
 
   <div class="full card">
-    <div class="card-hdr"><div><div class="card-title">Agenda de Proyectos</div><div class="card-sub">En Curso + En Revisión (sin importar PPTO) · ordenados por Fecha Límite</div></div></div>
-    <div class="tbl-wrap"><table><thead><tr><th>Responsable</th><th>Departamento</th><th>Proyecto</th><th>Servicio</th><th>Cliente</th><th>Prioridad</th><th class="r">Fecha Revisión</th><th class="r">Fecha Límite</th><th>Estado</th><th>Días</th></tr></thead><tbody id="tbody-agenda"></tbody></table></div>
+    <div class="card-hdr">
+      <div><div class="card-title">Agenda de Proyectos</div><div class="card-sub">En Curso + En Revisión (sin importar PPTO) · ordenados por Fecha Límite</div></div>
+      <div class="ag-due-controls" id="ag-due-controls">
+        <span class="modal-due-sum" id="ag-due-sum"></span>
+        <div class="due-chips">
+          <button class="due-chip active" data-due="todos" onclick="setAgDue('todos')">Todos</button>
+          <button class="due-chip" data-due="porvencer" onclick="setAgDue('porvencer')">Por vencer</button>
+          <button class="due-chip" data-due="vencidos" onclick="setAgDue('vencidos')">Vencidos</button>
+        </div>
+        <label class="due-days">≤ <select id="ag-due-days" onchange="setDueDays(this.value)"><option>3</option><option selected>7</option><option>15</option></select> días</label>
+      </div>
+    </div>
+    <div class="tbl-wrap ag-scroll"><table><thead><tr><th>Responsable</th><th>Departamento</th><th>Proyecto</th><th>Servicio</th><th>Cliente</th><th>Prioridad</th><th class="r">Fecha Revisión</th><th class="r">Fecha Límite</th><th>Estado</th><th>Días</th></tr></thead><tbody id="tbody-agenda"></tbody></table></div>
   </div>
 
   <div class="full card">
@@ -607,9 +673,11 @@ function detectCols(headers){
     mes_cob:     f(['mes de cobro','mes cobro']),
     prioridad:   f(['prioridad']),
     est_proy:    f(['estatus del proyecto','estatus proyecto']),
-    responsable: f(['responsable']),
+    responsable: (h.indexOf('responsable')>=0 ? h.indexOf('responsable') : f(['responsable'])),
+    resp_ppto:   f(['responsable elab']),
     depto:       f(['departamento']),
     fecha_lim:   f(['fecha limite','fecha límite']),
+    fecha_ini:   f(['fecha de inicio','fecha inicio']),
     fecha_rev:   f(['fecha de revisión','fecha revision']),
     fecha_ent:   f(['fecha de entrega','fecha entrega']),
   };
@@ -666,8 +734,10 @@ async function loadData(){
         prioridad:   get(c.prioridad),
         est_proy:    get(c.est_proy),
         responsable: get(c.responsable),
+        resp_ppto:   get(c.resp_ppto),
         depto:       get(c.depto),
         fecha_lim:   parseDate(get(c.fecha_lim)),
+        fecha_ini:   parseDate(get(c.fecha_ini)),
         fecha_rev:   parseDate(get(c.fecha_rev)),
         fecha_ent:   parseDate(get(c.fecha_ent)),
       };
@@ -1360,9 +1430,13 @@ function renderI(){
 /* ══ AGENDA DE PROYECTOS (unifica Prioridades Altas + Fechas Críticas) ══ */
 function renderAgenda(){
   const today=new Date(); today.setHours(0,0,0,0);
-  const rows=opRows(RAW.filter(r=>
-    ['En Curso','En Revisión'].includes(r.est_proy)&&inSol(r.mes_sol)
-  )).sort((a,b)=>(a.fecha_lim||new Date(9999,0,1))-(b.fecha_lim||new Date(9999,0,1)));
+  const base=opRows(RAW.filter(r=>['En Curso','En Revisión'].includes(r.est_proy)&&inSol(r.mes_sol)));
+  // Resumen de vencimiento (sobre el universo completo, antes de filtrar)
+  const agSum=document.getElementById('ag-due-sum'); if(agSum) agSum.innerHTML=dueSummaryHTML(base,false);
+  let rows=base;
+  if(AG_DUE==='porvencer') rows=rows.filter(r=>dueClassOf(r)==='porvencer');
+  else if(AG_DUE==='vencidos') rows=rows.filter(r=>dueClassOf(r)==='vencido');
+  rows=rows.sort((a,b)=>(a.fecha_lim||new Date(9999,0,1))-(b.fecha_lim||new Date(9999,0,1)));
   document.getElementById('tbody-agenda').innerHTML=rows.length?rows.map(r=>{
     const dias=r.fecha_lim?daysBetween(today,r.fecha_lim):null;
     const col=dias===null?'pill-gray':dias<0?'pill-red':dias<=7?'pill-amber':'pill-green';
@@ -1394,26 +1468,30 @@ function renderLicitacion(){
     if(!byId.has(id)){ const g={rows:[]}; byId.set(id,g); groups.push(g); }
     byId.get(id).rows.push(r);
   });
-  if(!groups.length){ document.getElementById('tbody-lic').innerHTML=`<tr><td colspan="7" class="empty">Sin proyectos en proceso de licitación</td></tr>`; return; }
+  if(!groups.length){ document.getElementById('tbody-lic').innerHTML=`<tr><td colspan="8" class="empty">Sin proyectos en proceso de licitación</td></tr>`; return; }
 
+  const today=new Date(); today.setHours(0,0,0,0);
   const pick=(rs,f)=>{ const s=new Set(rs.map(x=>(x[f]||'').trim()).filter(Boolean)); return s.size===0?'—':s.size===1?[...s][0]:'Varios'; };
   const fDate=d=>d?d.toLocaleDateString('es-MX'):'—';
-  // ordenar grupos por monto total desc
-  groups.sort((a,b)=>b.rows.reduce((s,r)=>s+r.monto_ppto,0)-a.rows.reduce((s,r)=>s+r.monto_ppto,0));
+  const pickDateStr=(rs,f)=>{ const ts=[...new Set(rs.map(x=>x[f]?x[f].getTime():null).filter(v=>v!==null))]; if(!ts.length)return '—'; if(ts.length>1)return 'Varios'; return new Date(ts[0]).toLocaleDateString('es-MX'); };
+  // Etiqueta de la fecha límite: días a favor (verde) / vence hoy (ámbar) / atrasado (rojo)
+  const limLic=(fl)=>{ if(!fl) return '<td class="r muted">—</td>'; const txt=fl.toLocaleDateString('es-MX'); const d=daysBetween(today,fl); if(d<0) return `<td class="r"><span class="pill pill-red">${txt} · Atrasado ${Math.abs(d)}d</span></td>`; if(d===0) return `<td class="r"><span class="pill pill-amber">${txt} · Vence hoy</span></td>`; return `<td class="r"><span class="pill pill-green">${txt} · ${d}d a favor</span></td>`; };
+  const limLicParent=(rs)=>{ const ts=[...new Set(rs.map(x=>x.fecha_lim?x.fecha_lim.getTime():null).filter(v=>v!==null))]; if(!ts.length)return '<td class="r muted">—</td>'; if(ts.length>1)return '<td class="r muted">Varios</td>'; return limLic(new Date(ts[0])); };
+  // ordenar por fecha límite ascendente (más urgente arriba)
+  groups.sort((a,b)=>Math.min(...a.rows.map(r=>r.fecha_lim?r.fecha_lim.getTime():Infinity))-Math.min(...b.rows.map(r=>r.fecha_lim?r.fecha_lim.getTime():Infinity)));
 
   let html='';
   groups.forEach((g,gi)=>{
     const rs=g.rows, multi=rs.length>1, head=rs[0], key='lic'+gi;
-    const monto=rs.reduce((a,r)=>a+r.monto_ppto,0);
-    const dep=pick(rs,'depto');
     html+=`<tr class="grp-parent${multi?' has-children':''}"${multi?` onclick="toggleGroup('${key}')"`:''}>
       <td style="font-weight:500">${multi?`<span class="grp-arrow" id="arr-${key}">▶</span>`:'<span class="grp-spacer"></span>'}${head.proyecto||'—'}${multi?` <span class="grp-badge">${rs.length}</span>`:''}</td>
       <td class="muted">${head.cliente||'—'}</td>
       <td class="muted">${pick(rs,'svc_own')}</td>
       <td class="muted">${pick(rs,'responsable')}</td>
-      <td>${deptoPill(dep)}</td>
-      <td class="r muted">${fDate(head.fecha_lim)}</td>
-      <td class="r" style="color:var(--teal);font-weight:600">${fmt(monto)}</td>
+      <td>${deptoPill(pick(rs,'depto'))}</td>
+      <td class="r muted">${pickDateStr(rs,'fecha_rev')}</td>
+      <td class="r muted">${pickDateStr(rs,'fecha_ent')}</td>
+      ${limLicParent(rs)}
     </tr>`;
     if(multi){
       rs.forEach(r=>{
@@ -1423,8 +1501,9 @@ function renderLicitacion(){
           <td class="muted">${r.svc_own||'—'}${r.svc_asoc?` · ${r.svc_asoc}`:''}</td>
           <td class="muted">${r.responsable||'—'}</td>
           <td>${deptoPill(r.depto)}</td>
-          <td class="r muted">${fDate(r.fecha_lim)}</td>
-          <td class="r" style="color:var(--teal)">${fmt(r.monto_ppto)}</td>
+          <td class="r muted">${fDate(r.fecha_rev)}</td>
+          <td class="r muted">${fDate(r.fecha_ent)}</td>
+          ${limLic(r.fecha_lim)}
         </tr>`;
       });
     }
@@ -1438,6 +1517,60 @@ function calWeek(delta, reset){ if(reset) CAL_OFFSET=0; else CAL_OFFSET+=delta; 
 function calMode(m){ CAL_MODE=m; renderCalendar(); }
 function mondayOf(date){ const t=new Date(date); t.setHours(0,0,0,0); const day=t.getDay(); t.setDate(t.getDate()-(day===0?6:day-1)); return t; }
 function sameDay(a,b){ return !!a&&!!b&&a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate(); }
+
+// Estado del deadline (UN solo indicador de color por tarjeta) → {cls, text}
+let CAL_CARDS=[];
+function calCardState(r){
+  const today=new Date(); today.setHours(0,0,0,0);
+  if(r.est_proy==='Cancelado') return {cls:'st-grey', text:'Cancelado'};
+  if(r.est_proy==='Completado'){
+    if(r.fecha_lim&&r.fecha_ent){
+      if(r.fecha_ent>r.fecha_lim) return {cls:'st-amber', text:`Entregado tarde ${daysBetween(r.fecha_lim,r.fecha_ent)}d`};
+      if(r.fecha_ent<r.fecha_lim) return {cls:'st-green', text:`Anticipado ${daysBetween(r.fecha_ent,r.fecha_lim)}d`};
+      return {cls:'st-green', text:'Entregado a tiempo'};
+    }
+    return {cls:'st-green', text:'Completado'};
+  }
+  if(!r.fecha_lim) return {cls:'st-grey', text:'En curso'};
+  const dias=daysBetween(today,r.fecha_lim);
+  if(dias<0) return {cls:'st-red', text:`Vencido hace ${Math.abs(dias)}d`};
+  if(dias<=DUE_DAYS) return {cls:'st-amber', text: dias===0?'Vence hoy':`Vence en ${dias}d`};
+  return {cls:'st-grey', text:`Vence en ${dias}d`};
+}
+// Prioridad como bandera (no pill de texto)
+function calPrioFlag(r){
+  const p=(r.prioridad||'').trim().toLowerCase();
+  if(!p) return '';
+  const cls=p==='alta'?'pf-alta':p==='media'?'pf-media':'pf-baja';
+  return `<span class="cal-flag ${cls}" title="Prioridad ${r.prioridad}">⚑</span>`;
+}
+// Detalle de la tarjeta (al hacer clic): todas las fechas + descripción
+function openCalDetail(idx){
+  const e=CAL_CARDS[idx]; if(!e) return; const r=e.r;
+  const fD=d=>d?d.toLocaleDateString('es-MX'):'—';
+  const st=calCardState(r);
+  const tipo=e.type==='ent'?'Entrega':e.type==='both'?'Revisión + Entrega':'Revisión';
+  document.getElementById('cal-detail-body').innerHTML=`
+    <div class="cd-evtype">${tipo}</div>
+    <div class="cd-title">${r.proyecto||r.cliente||'—'}</div>
+    <div class="cd-sub">${r.cliente||'—'}${r.svc_own?' · '+r.svc_own+(r.svc_asoc?' · '+r.svc_asoc:''):''}</div>
+    <div class="cal-state ${st.cls}" style="margin:12px 0;display:inline-block">${st.text}</div>
+    <div class="cd-grid">
+      <div><span class="cd-k">Departamento</span><span>${deptoPill(r.depto)}</span></div>
+      <div><span class="cd-k">Responsable</span><span>${r.responsable||'—'}</span></div>
+      <div><span class="cd-k">Prioridad</span><span>${r.prioridad||'—'}</span></div>
+      <div><span class="cd-k">Estatus</span><span>${r.est_proy||'—'}</span></div>
+      <div><span class="cd-k">Fecha de Inicio</span><span>${fD(r.fecha_ini)}</span></div>
+      <div><span class="cd-k">Fecha de Revisión</span><span>${fD(r.fecha_rev)}</span></div>
+      <div><span class="cd-k">Fecha de Entrega</span><span>${fD(r.fecha_ent)}</span></div>
+      <div><span class="cd-k">Fecha Límite</span><span>${fD(r.fecha_lim)}</span></div>
+    </div>
+    ${r.descripcion?`<div class="cd-desc"><span class="cd-k">Descripción</span><p>${(r.descripcion||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p></div>`:''}`;
+  document.getElementById('cal-detail-ov').classList.add('on');
+  document.body.style.overflow='hidden';
+}
+function closeCalDetail(){ document.getElementById('cal-detail-ov').classList.remove('on'); document.body.style.overflow=''; }
+
 function renderCalendar(){
   const base=mondayOf(new Date()); base.setDate(base.getDate()+CAL_OFFSET*7);
   const today=new Date(); today.setHours(0,0,0,0);
@@ -1447,54 +1580,26 @@ function renderCalendar(){
   document.querySelectorAll('.cal-mode-btn').forEach(b=>b.classList.toggle('active', b.dataset.mode===CAL_MODE));
 
   const showRev=CAL_MODE!=='entrega', showEnt=CAL_MODE!=='revision';
-  const poolRev=showRev?opRows(RAW.filter(r=>r.fecha_rev)):[];
-  const poolEnt=showEnt?opRows(RAW.filter(r=>r.fecha_ent)):[];
+  const dueOk=r=> CAL_DUE==='todos' ? true : CAL_DUE==='vencidos' ? dueClassOf(r)==='vencido' : dueClassOf(r)==='porvencer';
+  const poolRev=showRev?opRows(RAW.filter(r=>r.fecha_rev)).filter(dueOk):[];
+  const poolEnt=showEnt?opRows(RAW.filter(r=>r.fecha_ent)).filter(dueOk):[];
   const nombres=['Lunes','Martes','Miércoles','Jueves','Viernes'];
   const deptosWeek=new Set();
   const fD=d=>d?d.toLocaleDateString('es-MX'):'—';
 
-  // GESTIÓN (revisión): Completado / Retrasado / Faltan, medido contra la Fecha Límite
-  const revTag=r=>{
-    let t='';
-    const done=r.est_proy==='Completado';
-    if(done) t+='<span class="cal-tag cal-tag-done">Completado</span>';
-    if(r.fecha_lim){
-      const ref=done?r.fecha_ent:today;
-      if(ref&&ref>r.fecha_lim){ t+=`<span class="cal-tag cal-tag-late">Retrasado ${daysBetween(r.fecha_lim,ref)}d</span>`; }
-      else if(!done){
-        const dias=daysBetween(today,r.fecha_lim);
-        if(dias>=0&&dias<=7) t+=`<span class="cal-tag cal-tag-soon">${dias===0?'Vence hoy':'Faltan '+dias+'d'}</span>`;
-      }
-    }
-    return t;
-  };
-  // ENTREGA: A tiempo / Anticipado / Tarde, comparando Fecha de Entrega vs Fecha Límite
-  const entTag=r=>{
-    if(!r.fecha_lim||!r.fecha_ent) return '';
-    if(r.fecha_ent>r.fecha_lim) return `<span class="cal-tag cal-tag-late">Tarde ${daysBetween(r.fecha_lim,r.fecha_ent)}d</span>`;
-    if(r.fecha_ent<r.fecha_lim) return `<span class="cal-tag cal-tag-early">Anticipado ${daysBetween(r.fecha_ent,r.fecha_lim)}d</span>`;
-    return '<span class="cal-tag cal-tag-done">A tiempo</span>';
-  };
+  CAL_CARDS=[];
+  // Tarjeta minimalista: tipo (sutil) · prioridad (bandera) · título · cliente · estado del deadline
   const chip=(r,type)=>{
     if(r.depto) deptosWeek.add(r.depto);
-    const isEnt=(type==='ent'||type==='both');
-    let typeTag;
-    if(type==='both') typeTag='<span class="cal-type cal-type-rev">Revisión</span><span class="cal-type cal-type-ent">Entregado</span>';
-    else if(type==='ent') typeTag='<span class="cal-type cal-type-ent">Entregado</span>';
-    else typeTag='<span class="cal-type cal-type-rev">Revisión</span>';
-    const pc=(r.prioridad||'').trim().toLowerCase();
-    const prioBadge=r.prioridad?`<span class="cal-prio cal-prio-${pc==='alta'?'alta':pc==='media'?'media':'baja'}">${r.prioridad}</span>`:'';
-    const dateLine=isEnt
-      ? `<div class="cal-chip-lim">Entregado: ${fD(r.fecha_ent)} · Límite: ${fD(r.fecha_lim)}</div>`
-      : `<div class="cal-chip-lim">Límite: ${fD(r.fecha_lim)}</div>`;
-    return `<div class="cal-chip ${isEnt?'cal-chip-ent':'cal-chip-rev'}" style="border-left-color:${deptoColor(r.depto)}" title="${((r.proyecto||r.cliente||'')+(r.depto?' · '+r.depto:'')+(r.responsable?' · '+r.responsable:'')).replace(/"/g,'')}">
-      <div class="cal-chip-top">${typeTag}${prioBadge}</div>
+    const idx=CAL_CARDS.push({r,type})-1;
+    const st=calCardState(r);
+    const tipo=type==='ent'?'Entrega':type==='both'?'Rev.+Entrega':'Revisión';
+    return `<div class="cal-chip" style="border-left-color:${deptoColor(r.depto)}" onclick="openCalDetail(${idx})" title="Ver detalle del proyecto">
+      <div class="cal-chip-top"><span class="cal-evtype">${tipo}</span>${calPrioFlag(r)}</div>
       <div class="cal-chip-t">${r.proyecto||r.cliente||'—'}</div>
       <div class="cal-chip-s">${r.cliente||''}${r.responsable?' · '+r.responsable:''}</div>
-      <div class="cal-chip-svc">${r.svc_own||'—'}${r.svc_asoc?` · ${r.svc_asoc}`:''}</div>
-      ${dateLine}
-      ${isEnt?entTag(r):revTag(r)}
-      ${r.descripcion?`<button class="cal-desc-btn" onclick="event.stopPropagation();this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">Descripción <span class="cal-desc-arr">▾</span></button><div class="cal-desc">${(r.descripcion||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>`:''}
+      <div class="cal-state ${st.cls}">${st.text}</div>
+      ${r.descripcion?`<div class="cal-chip-desc">${(r.descripcion||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>`:''}
     </div>`;
   };
   // Misma fila lógica (proyecto + servicio) revisada y entregada el mismo día → una sola tarjeta
@@ -1516,6 +1621,15 @@ function renderCalendar(){
     </div>`;
   });
   html+='</div>';
+  // Contadores de la semana (proyectos únicos por estado de vencimiento) para las pestañas
+  const inWeek=d=>d&&d>=days[0]&&d<=days[4];
+  const wkRows=[];
+  if(showRev) opRows(RAW.filter(r=>r.fecha_rev&&inWeek(r.fecha_rev))).forEach(r=>wkRows.push(r));
+  if(showEnt) opRows(RAW.filter(r=>r.fecha_ent&&inWeek(r.fecha_ent))).forEach(r=>wkRows.push(r));
+  const dmW=dueMap(wkRows); let cPV=0,cVenc=0; dmW.forEach(c=>{ if(c==='vencido')cVenc++; else if(c==='porvencer')cPV++; });
+  const setCnt=(id,n)=>{ const e=document.getElementById(id); if(e) e.textContent=n; };
+  setCnt('due-cnt-todos',dmW.size); setCnt('due-cnt-porvencer',cPV); setCnt('due-cnt-vencidos',cVenc);
+  const vChip=document.querySelector('#cal-due-row .due-chip[data-due="vencidos"]'); if(vChip) vChip.classList.toggle('has-alert',cVenc>0);
   const legend=[...deptosWeek].sort();
   if(legend.length) html+=`<div class="cal-legend">${legend.map(dp=>`<span class="cal-leg-item"><span class="cal-leg-dot" style="background:${deptoColor(dp)}"></span>${dp}</span>`).join('')}</div>`;
   const el=document.getElementById('op-cal'); if(el) el.innerHTML=html;
@@ -1821,13 +1935,23 @@ const KPI_DETAIL = {
   tasa:        {title:'Tasa de Cierre',        sub:'Aprobados + Rechazados (base del cálculo)',          filter:r=>['Aprobado','Rechazado'].includes(r.est_ppto)&&inPeriodo(r.mes_sol)},
   newleads:    {title:'New Leads - Requirements', sub:'Proyectos nuevos (excluye renovaciones, salvo Por Elaboración) · lunes: semana anterior', weekly:true, dedupe:true, filter:r=>{const lw=leadsWindow(); return r.fecha_sol&&r.fecha_sol>=lw.start&&r.fecha_sol<=lw.end&&leadQualifies(r.id,lw);}},
   // ── Operación · por Estatus del Proyecto (cualquier PPTO + Período + filtros Depto/Resp) ──
-  proy_encurso:    {title:'Proyectos en Curso',     sub:'Estatus del Proyecto: En Curso',    filter:r=>r.est_proy==='En Curso'   &&inPeriodo(r.mes_sol)&&opMatchRow(r)},
-  proy_pendiente:  {title:'Proyectos Pendientes',   sub:'Estatus del Proyecto: Pendiente',   filter:r=>r.est_proy==='Pendiente'  &&inPeriodo(r.mes_sol)&&opMatchRow(r)},
-  proy_completado: {title:'Proyectos Completados',  sub:'Estatus del Proyecto: Completado',  filter:r=>r.est_proy==='Completado' &&inPeriodo(r.mes_sol)&&opMatchRow(r)},
-  proy_enrevision: {title:'Proyectos en Revisión',  sub:'Estatus del Proyecto: En Revisión', filter:r=>r.est_proy==='En Revisión'&&inPeriodo(r.mes_sol)&&opMatchRow(r)},
+  proy_encurso:    {title:'Proyectos en Curso',     sub:'Estatus del Proyecto: En Curso',    pField:'responsable', filter:r=>r.est_proy==='En Curso'   &&inPeriodo(r.mes_sol)&&opMatchRow(r)},
+  proy_pendiente:  {title:'Proyectos Pendientes',   sub:'Estatus del Proyecto: Pendiente',   pField:'responsable', filter:r=>r.est_proy==='Pendiente'  &&inPeriodo(r.mes_sol)&&opMatchRow(r)},
+  proy_completado: {title:'Proyectos Completados',  sub:'Estatus del Proyecto: Completado',  pField:'responsable', filter:r=>r.est_proy==='Completado' &&inPeriodo(r.mes_sol)&&opMatchRow(r)},
+  proy_enrevision: {title:'Proyectos en Revisión',  sub:'Estatus del Proyecto: En Revisión', pField:'responsable', filter:r=>r.est_proy==='En Revisión'&&inPeriodo(r.mes_sol)&&opMatchRow(r)},
 };
 
 let MODAL_ROWS = [];
+// Campo del 2º filtro del modal según la tarjeta: 'canal_int' (Responsable de Cuentas,
+// tarjetas de arriba) o 'responsable' (Responsable, tarjetas de Operación)
+let MODAL_PFIELD='canal_int', MODAL_PLABEL='Todos los responsables de cuentas';
+// El modal de Operación añade columnas de fechas (Revisión/Entrega/Límite)
+let MODAL_ISOP=false, MODAL_SHOWDUE=false;
+// Filtro de vencimiento: 'todos' | 'porvencer' | 'vencidos' · umbral de días compartido
+let MODAL_DUE='todos', AG_DUE='todos', CAL_DUE='todos', DUE_DAYS=7;
+function isActiveProy(r){ return !['Completado','Cancelado'].includes(r.est_proy); }
+// Clasifica un proyecto activo según su Fecha Límite: 'vencido' | 'porvencer' | 'enplazo' | 'na'
+function dueClassOf(r){ if(!isActiveProy(r)||!r.fecha_lim) return 'na'; const t=new Date(); t.setHours(0,0,0,0); const d=daysBetween(t,r.fecha_lim); if(d<0) return 'vencido'; if(d<=DUE_DAYS) return 'porvencer'; return 'enplazo'; }
 
 function estPill(e){
   const map={
@@ -1847,8 +1971,23 @@ function openDetail(key){
   document.getElementById('modal-title').textContent=cfg.title;
   document.getElementById('modal-sub').textContent=cfg.sub+((vSol&&!cfg.weekly)?' · '+vSol:'');
   document.getElementById('modal-search').value='';
+  MODAL_PFIELD=cfg.pField||'canal_int';
+  MODAL_PLABEL=MODAL_PFIELD==='responsable'?'Todos los responsables':'Todos los responsables de cuentas';
+  MODAL_ISOP=MODAL_PFIELD==='responsable';
+  document.getElementById('modal-f-ppto').style.display=MODAL_ISOP?'none':'';
+  document.getElementById('modal-thead').innerHTML=MODAL_ISOP
+    ? '<th>Fecha Solicitud</th><th>Cliente</th><th>Proyecto</th><th>Servicio</th><th>Departamento</th><th>Responsable</th><th class="r">F. Inicio</th><th class="r">F. Revisión</th><th class="r">F. Entrega</th><th class="r">F. Límite</th>'
+    : '<th>Fecha Solicitud</th><th>Canal Interno</th><th>Cliente</th><th>Proyecto</th><th>Servicio</th><th>Departamento</th><th>Responsable</th><th>Estatus PPTO</th><th class="r">Monto</th>';
+  // Barra de vencimiento: solo en modales de Operación con proyectos activos
+  MODAL_DUE='todos';
+  MODAL_SHOWDUE=MODAL_ISOP && MODAL_ROWS.some(r=>isActiveProy(r));
+  const _dueBar=document.getElementById('modal-due-bar'); if(_dueBar) _dueBar.style.display=MODAL_SHOWDUE?'flex':'none';
+  document.querySelectorAll('#modal-due-bar .due-chip').forEach(b=>b.classList.toggle('active',b.dataset.due==='todos'));
+  const _dd=document.getElementById('modal-due-days'); if(_dd) _dd.value=DUE_DAYS;
   poblarModalFiltros(MODAL_ROWS);
   renderModalRows(MODAL_ROWS);
+  updateModalClearVisibility();
+  updateDueSummary();
   document.getElementById('modal-ov').classList.add('on');
   document.body.style.overflow='hidden';
 }
@@ -1862,8 +2001,10 @@ function renderModalRows(rows){
   const tb=document.getElementById('modal-tbody');
   const cnt=document.getElementById('modal-count');
   const foot=document.getElementById('modal-foot');
+  const today=new Date(); today.setHours(0,0,0,0);
+  const nCols=MODAL_ISOP?10:9;
   if(!rows.length){
-    tb.innerHTML=`<tr><td colspan="9" class="empty">Sin registros</td></tr>`;
+    tb.innerHTML=`<tr><td colspan="${nCols}" class="empty">Sin registros</td></tr>`;
     cnt.textContent='0 proyectos';
     foot.innerHTML=`<span>Sin registros</span><span class="mf-total">${fmt(0)}</span>`;
     return;
@@ -1880,49 +2021,86 @@ function renderModalRows(rows){
 
   const total=rows.reduce((a,r)=>a+r.monto_ppto,0);
   const fDate=d=>d?d.toLocaleDateString('es-MX'):'—';
-  // Si todas las filas comparten el valor → mostrarlo; si difieren → "Varios"
   const pick=(rs,f)=>{ const s=new Set(rs.map(x=>(x[f]||'').trim()).filter(Boolean)); return s.size===0?'—':s.size===1?[...s][0]:'Varios'; };
+  const pickDateStr=(rs,f)=>{ const ts=[...new Set(rs.map(x=>x[f]?x[f].getTime():null).filter(v=>v!==null))]; if(!ts.length)return '—'; if(ts.length>1)return 'Varios'; return new Date(ts[0]).toLocaleDateString('es-MX'); };
+  // Celda de Fecha Límite: resalta si está por vencer/vencida y el proyecto sigue activo
+  const limCell=(fl,estProy)=>{ if(!fl) return '<td class="r muted">—</td>'; const txt=fl.toLocaleDateString('es-MX'); if(!['Completado','Cancelado'].includes(estProy)){ const dias=daysBetween(today,fl); if(dias<0) return `<td class="r"><span class="pill pill-red">${txt} · ${Math.abs(dias)}d venc.</span></td>`; if(dias<=DUE_DAYS) return `<td class="r"><span class="pill pill-amber">${txt} · ${dias===0?'hoy':dias+'d'}</span></td>`; } return `<td class="r muted">${txt}</td>`; };
+  const limParent=(rs,estProy)=>{ const ts=[...new Set(rs.map(x=>x.fecha_lim?x.fecha_lim.getTime():null).filter(v=>v!==null))]; if(!ts.length)return '<td class="r muted">—</td>'; if(ts.length>1)return '<td class="r muted">Varios</td>'; return limCell(new Date(ts[0]),estProy); };
 
   let html='';
   groups.forEach((g,gi)=>{
     const rs=g.rows, multi=rs.length>1, head=rs[0], key='g'+gi;
-    const montoGrp=rs.reduce((a,r)=>a+r.monto_ppto,0);
-    const svc=pick(rs,'svc_own'), dep=pick(rs,'depto'), resp=pick(rs,'responsable'), est=pick(rs,'est_ppto');
-    const estCls=est==='Varios'?'pill-gray':estPill(est);
-    // fila PADRE (resumen del proyecto)
-    html+=`<tr class="grp-parent${multi?' has-children':''}"${multi?` onclick="toggleGroup('${key}')"`:''}>
-      <td class="muted">${multi?`<span class="grp-arrow" id="arr-${key}">▶</span>`:'<span class="grp-spacer"></span>'}${fDate(head.fecha_sol)}</td>
-      <td>${head.canal_int||'—'}</td>
-      <td style="font-weight:500">${head.cliente||'—'}${multi?` <span class="grp-badge">${rs.length}</span>`:''}</td>
-      <td class="muted">${pick(rs,'proyecto')}</td>
-      <td class="muted">${svc}</td>
-      <td>${deptoPill(dep)}</td>
-      <td class="muted">${resp}</td>
-      <td>${est==='—'?'—':`<span class="pill ${estCls}">${est}</span>`}</td>
-      <td class="r" style="color:var(--teal);font-weight:600">${fmt(montoGrp)}</td>
-    </tr>`;
-    // filas HIJAS (registros individuales, ocultas hasta expandir)
-    if(multi){
-      rs.forEach(r=>{
-        html+=`<tr class="grp-child child-${key}" style="display:none">
-          <td class="muted" style="padding-left:30px">${fDate(r.fecha_sol)}</td>
-          <td>${r.canal_int||'—'}</td>
-          <td>${r.cliente||'—'}</td>
-          <td class="muted">${r.proyecto||'—'}</td>
-          <td class="muted">${r.svc_own||'—'}${r.svc_asoc?` · ${r.svc_asoc}`:''}</td>
-          <td>${deptoPill(r.depto)}</td>
-          <td class="muted">${r.responsable||'—'}</td>
-          <td><span class="pill ${estPill(r.est_ppto)}">${r.est_ppto||'—'}</span></td>
-          <td class="r" style="color:var(--teal)">${fmt(r.monto_ppto)}</td>
-        </tr>`;
-      });
+    if(MODAL_ISOP){
+      // ── Modal SLIM de Operación: Proyecto · Cliente · Responsable · Depto · F.Rev · F.Ent · F.Límite ──
+      const estProy=pick(rs,'est_proy');
+      html+=`<tr class="grp-parent${multi?' has-children':''}"${multi?` onclick="toggleGroup('${key}')"`:''}>
+        <td class="muted">${multi?`<span class="grp-arrow" id="arr-${key}">▶</span>`:'<span class="grp-spacer"></span>'}${pickDateStr(rs,'fecha_sol')}</td>
+        <td>${head.cliente||'—'}</td>
+        <td style="font-weight:500">${pick(rs,'proyecto')}${multi?` <span class="grp-badge">${rs.length}</span>`:''}</td>
+        <td class="muted">${pick(rs,'svc_own')}</td>
+        <td>${deptoPill(pick(rs,'depto'))}</td>
+        <td class="muted">${pick(rs,'responsable')}</td>
+        <td class="r muted">${pickDateStr(rs,'fecha_ini')}</td>
+        <td class="r muted">${pickDateStr(rs,'fecha_rev')}</td>
+        <td class="r muted">${pickDateStr(rs,'fecha_ent')}</td>
+        ${limParent(rs,estProy)}
+      </tr>`;
+      if(multi){
+        rs.forEach(r=>{
+          html+=`<tr class="grp-child child-${key}" style="display:none">
+            <td class="muted" style="padding-left:30px">${fDate(r.fecha_sol)}</td>
+            <td>${r.cliente||'—'}</td>
+            <td class="muted">${r.proyecto||'—'}</td>
+            <td class="muted">${r.svc_own||'—'}${r.svc_asoc?` · ${r.svc_asoc}`:''}</td>
+            <td>${deptoPill(r.depto)}</td>
+            <td class="muted">${r.responsable||'—'}</td>
+            <td class="r muted">${fDate(r.fecha_ini)}</td>
+            <td class="r muted">${fDate(r.fecha_rev)}</td>
+            <td class="r muted">${fDate(r.fecha_ent)}</td>
+            ${limCell(r.fecha_lim,r.est_proy)}
+          </tr>`;
+        });
+      }
+    } else {
+      // ── Modal base (tarjetas de arriba): 9 columnas ──
+      const montoGrp=rs.reduce((a,r)=>a+r.monto_ppto,0);
+      const svc=pick(rs,'svc_own'), dep=pick(rs,'depto'), resp=pick(rs,'responsable'), est=pick(rs,'est_ppto');
+      const estCls=est==='Varios'?'pill-gray':estPill(est);
+      html+=`<tr class="grp-parent${multi?' has-children':''}"${multi?` onclick="toggleGroup('${key}')"`:''}>
+        <td class="muted">${multi?`<span class="grp-arrow" id="arr-${key}">▶</span>`:'<span class="grp-spacer"></span>'}${fDate(head.fecha_sol)}</td>
+        <td>${head.canal_int||'—'}</td>
+        <td style="font-weight:500">${head.cliente||'—'}${multi?` <span class="grp-badge">${rs.length}</span>`:''}</td>
+        <td class="muted">${pick(rs,'proyecto')}</td>
+        <td class="muted">${svc}</td>
+        <td>${deptoPill(dep)}</td>
+        <td class="muted">${resp}</td>
+        <td>${est==='—'?'—':`<span class="pill ${estCls}">${est}</span>`}</td>
+        <td class="r" style="color:var(--teal);font-weight:600">${fmt(montoGrp)}</td>
+      </tr>`;
+      if(multi){
+        rs.forEach(r=>{
+          html+=`<tr class="grp-child child-${key}" style="display:none">
+            <td class="muted" style="padding-left:30px">${fDate(r.fecha_sol)}</td>
+            <td>${r.canal_int||'—'}</td>
+            <td>${r.cliente||'—'}</td>
+            <td class="muted">${r.proyecto||'—'}</td>
+            <td class="muted">${r.svc_own||'—'}${r.svc_asoc?` · ${r.svc_asoc}`:''}</td>
+            <td>${deptoPill(r.depto)}</td>
+            <td class="muted">${r.responsable||'—'}</td>
+            <td><span class="pill ${estPill(r.est_ppto)}">${r.est_ppto||'—'}</span></td>
+            <td class="r" style="color:var(--teal)">${fmt(r.monto_ppto)}</td>
+          </tr>`;
+        });
+      }
     }
   });
   tb.innerHTML=html;
 
   const nProj=groups.length;
   cnt.textContent=nProj+' proyecto'+(nProj!==1?'s':'');
-  foot.innerHTML=`<span>Total · ${nProj} proyecto${nProj!==1?'s':''}</span><span class="mf-total">${fmt(total)}</span>`;
+  foot.innerHTML=MODAL_ISOP
+    ? `<span>Total · ${nProj} proyecto${nProj!==1?'s':''}</span><span class="mf-total"></span>`
+    : `<span>Total · ${nProj} proyecto${nProj!==1?'s':''}</span><span class="mf-total">${fmt(total)}</span>`;
 }
 
 // Expandir/colapsar los registros de un proyecto en el modal
@@ -1940,48 +2118,97 @@ function poblarModalFiltros(rows){
   selD.innerHTML='<option value="">Todos los departamentos</option>'+
     deptos.map(d=>`<option value="${d.replace(/"/g,'&quot;')}">${d}</option>`).join('');
   selD.value='';
-  poblarModalResp();
+  document.getElementById('modal-f-rc').value='';
+  document.getElementById('modal-f-ppto').value='';
+  poblarModalRC();
+  poblarModalPPTO();
 }
 
-// Poblar Responsable solo con los que existen dentro del departamento seleccionado
-// (o todos si no hay departamento elegido). Conserva la selección actual si sigue siendo válida.
-function poblarModalResp(){
+// Poblar "Responsable de Cuentas" (campo Canal Interno) con los valores presentes,
+// filtrados por el departamento seleccionado. Conserva la selección si sigue siendo válida.
+function poblarModalRC(){
   const fd=document.getElementById('modal-f-depto').value;
   const base=fd?MODAL_ROWS.filter(r=>r.depto===fd):MODAL_ROWS;
-  const resps=[...new Set(base.map(r=>r.responsable).filter(Boolean))].sort();
-  const selR=document.getElementById('modal-f-resp');
+  const rcs=[...new Set(base.map(r=>r[MODAL_PFIELD]).filter(Boolean))].sort();
+  const selR=document.getElementById('modal-f-rc');
   const cur=selR.value;
-  selR.innerHTML='<option value="">Todos los responsables</option>'+
-    resps.map(r=>`<option value="${r.replace(/"/g,'&quot;')}">${r}</option>`).join('');
-  selR.value=(cur&&resps.includes(cur))?cur:'';
+  selR.innerHTML=`<option value="">${MODAL_PLABEL}</option>`+
+    rcs.map(r=>`<option value="${r.replace(/"/g,'&quot;')}">${r}</option>`).join('');
+  selR.value=(cur&&rcs.includes(cur))?cur:'';
 }
 
-// Al cambiar el departamento: refrescar opciones de responsable y re-filtrar
+// Poblar "Responsable de PPTO" (campo Responsable Elab. PPTO), en cascada por departamento.
+function poblarModalPPTO(){
+  const fd=document.getElementById('modal-f-depto').value;
+  const base=fd?MODAL_ROWS.filter(r=>r.depto===fd):MODAL_ROWS;
+  const list=[...new Set(base.map(r=>r.resp_ppto).filter(Boolean))].sort();
+  const sel=document.getElementById('modal-f-ppto');
+  const cur=sel.value;
+  sel.innerHTML='<option value="">Todos los resp. de PPTO</option>'+
+    list.map(r=>`<option value="${r.replace(/"/g,'&quot;')}">${r}</option>`).join('');
+  sel.value=(cur&&list.includes(cur))?cur:'';
+}
+
+// Al cambiar el departamento: refrescar opciones de responsables y re-filtrar
 function onModalDeptoChange(){
-  poblarModalResp();
+  poblarModalRC();
+  poblarModalPPTO();
   filterModal();
 }
 
 function limpiarModalFiltros(){
   document.getElementById('modal-search').value='';
   document.getElementById('modal-f-depto').value='';
-  poblarModalResp();
-  document.getElementById('modal-f-resp').value='';
+  poblarModalRC();
+  poblarModalPPTO();
+  document.getElementById('modal-f-rc').value='';
+  document.getElementById('modal-f-ppto').value='';
   renderModalRows(MODAL_ROWS);
+  updateModalClearVisibility();
+}
+
+// El botón "Limpiar filtros" del modal solo se muestra si hay algún filtro activo
+function updateModalClearVisibility(){
+  const q=document.getElementById('modal-search').value.trim();
+  const fd=document.getElementById('modal-f-depto').value;
+  const fr=document.getElementById('modal-f-rc').value;
+  const fp=document.getElementById('modal-f-ppto').value;
+  const b=document.getElementById('modal-clear'); if(b) b.style.display=(q||fd||fr||fp)?'inline-block':'none';
 }
 
 function filterModal(){
   const q =document.getElementById('modal-search').value.trim().toLowerCase();
   const fd=document.getElementById('modal-f-depto').value;
-  const fr=document.getElementById('modal-f-resp').value;
+  const fr=document.getElementById('modal-f-rc').value;
   let f=MODAL_ROWS;
   if(fd) f=f.filter(r=>r.depto===fd);
-  if(fr) f=f.filter(r=>r.responsable===fr);
+  if(fr) f=f.filter(r=>r[MODAL_PFIELD]===fr);
+  const fp=document.getElementById('modal-f-ppto').value;
+  if(fp) f=f.filter(r=>r.resp_ppto===fp);
+  if(MODAL_DUE!=='todos'){ const dm=dueMap(MODAL_ROWS), want=MODAL_DUE==='vencidos'?'vencido':'porvencer'; f=f.filter(r=>dm.get(idKey(r))===want); }
   if(q)  f=f.filter(r=>[r.cliente,r.svc_own,r.canal_int,r.est_ppto].some(x=>(x||'').toLowerCase().includes(q)));
   renderModalRows(f);
+  updateModalClearVisibility();
 }
 
-document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeDetail(); });
+function idKey(r){ return (r.id||'').trim()||('p:'+(r.proyecto||'').trim()); }
+// Mapa id→clase de vencimiento más urgente del proyecto (vencido > porvencer > enplazo)
+function dueMap(rows){ const rank={vencido:3,porvencer:2,enplazo:1,na:0}; const m=new Map(); rows.forEach(r=>{ const id=idKey(r),c=dueClassOf(r); if(!m.has(id)||rank[c]>rank[m.get(id)]) m.set(id,c); }); return m; }
+// Resumen de vencimiento. byProject=true cuenta proyectos únicos (modal); false cuenta registros (Agenda)
+function dueSummaryHTML(rows, byProject){
+  let venc=0,pv=0;
+  if(byProject){ dueMap(rows).forEach(c=>{ if(c==='vencido')venc++; else if(c==='porvencer')pv++; }); }
+  else { rows.forEach(r=>{ const c=dueClassOf(r); if(c==='vencido')venc++; else if(c==='porvencer')pv++; }); }
+  return `<span class="due-stat due-venc">🔴 ${venc} vencidos</span><span class="due-stat due-pv">🟡 ${pv} por vencer</span>`;
+}
+function updateDueSummary(){ const el=document.getElementById('modal-due-sum'); if(el) el.innerHTML=dueSummaryHTML(MODAL_ROWS,true); }
+function setModalDue(m){ MODAL_DUE=m; document.querySelectorAll('#modal-due-bar .due-chip').forEach(b=>b.classList.toggle('active',b.dataset.due===m)); filterModal(); }
+function setAgDue(m){ AG_DUE=m; document.querySelectorAll('#ag-due-controls .due-chip').forEach(b=>b.classList.toggle('active',b.dataset.due===m)); renderAgenda(); }
+function setCalDue(m){ CAL_DUE=m; document.querySelectorAll('#cal-due-row .due-chip').forEach(b=>b.classList.toggle('active',b.dataset.due===m)); renderCalendar(); }
+// El selector de días es compartido entre calendario, modal y Agenda
+function setDueDays(v){ DUE_DAYS=+v; ['modal-due-days','ag-due-days','cal-due-days'].forEach(id=>{ const e=document.getElementById(id); if(e)e.value=v; }); updateDueSummary(); filterModal(); renderAgenda(); renderCalendar(); }
+
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeDetail(); closeCalDetail(); } });
 </script>
 
 <!-- MODAL DETALLE -->
@@ -1997,13 +2224,23 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeDetail(); });
     <div class="modal-tools">
       <input class="modal-search" id="modal-search" placeholder="Buscar cliente, servicio, canal o estatus..." oninput="filterModal()">
       <select id="modal-f-depto" onchange="onModalDeptoChange()"><option value="">Todos los departamentos</option></select>
-      <select id="modal-f-resp" onchange="filterModal()"><option value="">Todos los responsables</option></select>
-      <button class="btn-clear-f" id="modal-clear" onclick="limpiarModalFiltros()">✕ Limpiar filtros</button>
+      <select id="modal-f-rc" onchange="filterModal()"><option value="">Todos los responsables de cuentas</option></select>
+      <select id="modal-f-ppto" onchange="filterModal()"><option value="">Todos los resp. de PPTO</option></select>
+      <button class="btn-clear-f" id="modal-clear" onclick="limpiarModalFiltros()" style="display:none">✕ Limpiar filtros</button>
       <span class="modal-count" id="modal-count"></span>
+    </div>
+    <div class="modal-due-bar" id="modal-due-bar" style="display:none">
+      <span class="modal-due-sum" id="modal-due-sum"></span>
+      <div class="due-chips">
+        <button class="due-chip active" data-due="todos" onclick="setModalDue('todos')">Todos</button>
+        <button class="due-chip" data-due="porvencer" onclick="setModalDue('porvencer')">Por vencer</button>
+        <button class="due-chip" data-due="vencidos" onclick="setModalDue('vencidos')">Vencidos</button>
+      </div>
+      <label class="due-days">≤ <select id="modal-due-days" onchange="setDueDays(this.value)"><option>3</option><option selected>7</option><option>15</option></select> días</label>
     </div>
     <div class="modal-body">
       <div class="tbl-wrap"><table>
-        <thead><tr>
+        <thead><tr id="modal-thead">
           <th>Fecha Solicitud</th><th>Canal Interno</th><th>Cliente</th>
           <th>Proyecto</th><th>Servicio</th><th>Departamento</th><th>Responsable</th><th>Estatus PPTO</th><th class="r">Monto</th>
         </tr></thead>
@@ -2011,6 +2248,14 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeDetail(); });
       </table></div>
     </div>
     <div class="modal-foot" id="modal-foot"></div>
+  </div>
+</div>
+
+<!-- DETALLE DE TARJETA DEL CALENDARIO -->
+<div class="cal-detail-ov" id="cal-detail-ov" onclick="if(event.target===this)closeCalDetail()">
+  <div class="cal-detail">
+    <button class="modal-close" onclick="closeCalDetail()" aria-label="Cerrar" style="position:absolute;top:14px;right:14px">✕</button>
+    <div id="cal-detail-body"></div>
   </div>
 </div>
 
