@@ -848,8 +848,11 @@ function renderKPIs(){
   const nCobrado     = new Set(cobrado_rows.map(r=>(r.id||'').trim()).filter(id=>id!=='')).size;
 
   // ── POR COBRAR ───────────────────────────────────────
-  const porCobrar  = Math.max(0, ventas - cobrado);
-  const nPorCobrar = Math.max(0, nVentas - nCobrado);
+  // Suma del saldo pendiente POR PROYECTO (solo positivos) — así un proyecto
+  // sobre-cobrado (por el diferencial cambiario) no borra lo que otros deben.
+  const porcobrar_rows = aprPeriodo.filter(r => r.monto_cob < r.monto_ppto);
+  const porCobrar  = porcobrar_rows.reduce((a,r) => a + (r.monto_ppto - r.monto_cob), 0);
+  const nPorCobrar = new Set(porcobrar_rows.map(r=>(r.id||'').trim()).filter(id=>id!=='')).size;
 
   // ── POR FACTURAR ─────────────────────────────────────
   // "Enviado - Pendiente A. C." en el período
@@ -902,7 +905,7 @@ function renderKPIs(){
       <div class="kpi-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
       <div class="kpi-lbl">Por Cobrar</div>
       <div class="kpi-val">${fmt(porCobrar)}</div>
-      <div class="kpi-sub"><b>${nPorCobrar}</b> proyectos · Ventas − Cobrado</div>
+      <div class="kpi-sub"><b>${nPorCobrar}</b> proyectos · saldo pendiente</div>
     </div>
     <div class="kpi c-red clickable" onclick="openDetail('porfacturar')">
       <div class="kpi-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><line x1="12" y1="12" x2="12" y2="18"/><line x1="9" y1="15" x2="15" y2="15"/></svg></div>
@@ -952,8 +955,8 @@ function renderA(){
     const cob_rows = dr.filter(r => r.est_ppto === 'Aprobado' && r.monto_cob > 0);
     const cobrado  = cob_rows.reduce((a,r) => a + r.monto_cob, 0);
 
-    // Por Cobrar: Ventas − Cobrado
-    const porCobrar = Math.max(0, ventas - cobrado);
+    // Por Cobrar: suma del saldo pendiente por proyecto (solo positivos)
+    const porCobrar = apr_rows.filter(r => r.monto_cob < r.monto_ppto).reduce((a,r) => a + (r.monto_ppto - r.monto_cob), 0);
 
     // Por Facturar: Enviado - Pendiente A. C.
     const fact_rows_d = dr.filter(r => r.est_ppto === 'Enviado - Pendiente A. C.');
