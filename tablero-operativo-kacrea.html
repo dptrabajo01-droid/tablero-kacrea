@@ -118,8 +118,8 @@ select:disabled{opacity:0.4;cursor:not-allowed}
 .op-filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 16px;margin-bottom:14px;box-shadow:var(--sh)}
 .op-filters .f-label{font-size:10px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.08em;white-space:nowrap}
 @media(max-width:768px){.op-filters{padding:10px 12px;gap:8px}}
-.op-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
-@media(max-width:1200px){.op-kpi-grid{grid-template-columns:repeat(2,1fr)}}
+.op-kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}
+@media(max-width:1200px){.op-kpi-grid{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:768px){.op-kpi-grid{grid-template-columns:repeat(2,1fr);gap:8px}}
 @media(max-width:400px){.op-kpi-grid{grid-template-columns:1fr 1fr}}
 /* CALENDARIO DE GESTIÓN */
@@ -553,6 +553,10 @@ tbody tr:hover td{background:var(--surface2)}
       <div class="kpi-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div>
       <div class="kpi-lbl">Proyectos en Revisión</div>
       <div class="kpi-val" id="op-kpi-enrevision">—</div>    </div>
+    <div class="kpi c-slate clickable" onclick="openDetail('proy_pausado')">
+      <div class="kpi-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg></div>
+      <div class="kpi-lbl">Proyectos Pausados</div>
+      <div class="kpi-val" id="op-kpi-pausado">—</div>    </div>
   </div>
 
   <div class="full card">
@@ -617,12 +621,12 @@ tbody tr:hover td{background:var(--surface2)}
 
   <div class="full card">
     <div class="card-hdr"><div><div class="card-title">Desempeño por Departamento</div><div class="card-sub">Carga activa, completados y cumplimiento de entregas · el Total suma la carga de cada área</div></div></div>
-    <div class="tbl-wrap"><table><thead><tr><th>Departamento</th><th class="r">En Curso</th><th class="r">En Revisión</th><th class="r">Pendientes</th><th class="r">Completados</th><th class="r">Atrasados</th><th class="r">% A Tiempo</th></tr></thead><tbody id="tbody-desp-depto"></tbody></table></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Departamento</th><th class="r">En Curso</th><th class="r">En Revisión</th><th class="r">Pendientes</th><th class="r">Pausados</th><th class="r">Completados</th><th class="r">Atrasados</th><th class="r">% A Tiempo</th></tr></thead><tbody id="tbody-desp-depto"></tbody></table></div>
   </div>
 
   <div class="full card">
     <div class="card-hdr"><div><div class="card-title">Desempeño por Responsable</div><div class="card-sub">Carga activa, completados y cumplimiento de entregas · el Total suma la carga de cada área</div></div></div>
-    <div class="tbl-wrap"><table><thead><tr><th>Responsable</th><th class="r">En Curso</th><th class="r">En Revisión</th><th class="r">Pendientes</th><th class="r">Completados</th><th class="r">Atrasados</th><th class="r">% A Tiempo</th></tr></thead><tbody id="tbody-desp-resp"></tbody></table></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Responsable</th><th class="r">En Curso</th><th class="r">En Revisión</th><th class="r">Pendientes</th><th class="r">Pausados</th><th class="r">Completados</th><th class="r">Atrasados</th><th class="r">% A Tiempo</th></tr></thead><tbody id="tbody-desp-resp"></tbody></table></div>
   </div>
 
   </div><!-- /panel-operacion -->
@@ -1385,7 +1389,7 @@ function deptoPill(d){
 // Tarjetas por Estatus del Proyecto · cuentan proyectos únicos (cualquier PPTO),
 // respetando el período de solicitud y los filtros Depto/Responsable de la pestaña
 function renderOpStatus(){
-  [['encurso','En Curso'],['pendiente','Pendiente'],['completado','Completado'],['enrevision','En Revisión']]
+  [['encurso','En Curso'],['pendiente','Pendiente'],['completado','Completado'],['enrevision','En Revisión'],['pausado','Pausado']]
   .forEach(([id,est])=>{
     const rows=opRows(RAW.filter(r=>r.est_proy===est&&inSol(r.mes_sol)));
     const n=new Set(rows.map(r=>(r.id||'').trim()).filter(Boolean)).size;
@@ -1645,18 +1649,19 @@ function desempenoBy(field){
   const map=new Map();
   rows.forEach(r=>{
     const k=(r[field]||'Sin asignar').trim()||'Sin asignar';
-    if(!map.has(k)) map.set(k,{enCurso:new Set(),enRev:new Set(),pend:new Set(),comp:new Set(),atras:new Set(),onTime:0,onTotal:0});
+    if(!map.has(k)) map.set(k,{enCurso:new Set(),enRev:new Set(),pend:new Set(),paus:new Set(),comp:new Set(),atras:new Set(),onTime:0,onTotal:0});
     // Unidad = involucramiento proyecto×departamento: así el trabajo sin responsable
     // se acumula en "Sin asignar" y los totales de ambas tablas coinciden.
     const d=map.get(k); const id=((r.id||'').trim()||r.proyecto||('_'+Math.random()))+'|'+(r.depto||'').trim();
     if(r.est_proy==='En Curso') d.enCurso.add(id);
     else if(r.est_proy==='En Revisión') d.enRev.add(id);
     else if(r.est_proy==='Pendiente') d.pend.add(id);
+    else if(r.est_proy==='Pausado') d.paus.add(id);
     else if(r.est_proy==='Completado'){ d.comp.add(id); if(r.fecha_ent&&r.fecha_lim){ d.onTotal++; if(r.fecha_ent<=r.fecha_lim) d.onTime++; } }
     if(['En Curso','En Revisión'].includes(r.est_proy)&&r.fecha_lim&&r.fecha_lim<today) d.atras.add(id);
   });
   const list=[...map.entries()].map(([k,d])=>({
-    k, enCurso:d.enCurso.size, enRev:d.enRev.size, pend:d.pend.size, comp:d.comp.size, atras:d.atras.size,
+    k, enCurso:d.enCurso.size, enRev:d.enRev.size, pend:d.pend.size, paus:d.paus.size, comp:d.comp.size, atras:d.atras.size,
     pct: d.onTotal>0?Math.round(d.onTime/d.onTotal*100):null
   })).sort((a,b)=> a.k==='Sin asignar' ? 1 : b.k==='Sin asignar' ? -1 : a.k.localeCompare(b.k,'es'));
   // Total = suma de la carga de cada área (cada depto/responsable cuenta su propio
@@ -1665,7 +1670,7 @@ function desempenoBy(field){
   let gOn=0,gTot=0; map.forEach(d=>{ gOn+=d.onTime; gTot+=d.onTotal; });
   const totals={
     enCurso:list.reduce((a,r)=>a+r.enCurso,0), enRev:list.reduce((a,r)=>a+r.enRev,0),
-    pend:list.reduce((a,r)=>a+r.pend,0), comp:list.reduce((a,r)=>a+r.comp,0),
+    pend:list.reduce((a,r)=>a+r.pend,0), paus:list.reduce((a,r)=>a+r.paus,0), comp:list.reduce((a,r)=>a+r.comp,0),
     atras:list.reduce((a,r)=>a+r.atras,0), pct: gTot>0?Math.round(gOn/gTot*100):null
   };
   return {list, totals};
@@ -1677,6 +1682,7 @@ function desempenoRow(r, isDepto){
     <td class="r" style="color:var(--blue)">${r.enCurso}</td>
     <td class="r" style="color:var(--purple)">${r.enRev}</td>
     <td class="r muted">${r.pend}</td>
+    <td class="r muted">${r.paus}</td>
     <td class="r" style="color:var(--green)">${r.comp}</td>
     <td class="r" style="color:var(--red)">${r.atras}</td>
     <td class="r">${pctPill(r.pct)}</td>
@@ -1688,6 +1694,7 @@ function desempenoTotalRow(t){
     <td class="r">${t.enCurso}</td>
     <td class="r">${t.enRev}</td>
     <td class="r">${t.pend}</td>
+    <td class="r">${t.paus}</td>
     <td class="r">${t.comp}</td>
     <td class="r">${t.atras}</td>
     <td class="r">${pctPill(t.pct)}</td>
@@ -1695,11 +1702,11 @@ function desempenoTotalRow(t){
 }
 function renderDesempenoResp(){
   const {list,totals}=desempenoBy('responsable');
-  document.getElementById('tbody-desp-resp').innerHTML=list.length?list.map(r=>desempenoRow(r,false)).join('')+desempenoTotalRow(totals):`<tr><td colspan="7" class="empty">Sin datos</td></tr>`;
+  document.getElementById('tbody-desp-resp').innerHTML=list.length?list.map(r=>desempenoRow(r,false)).join('')+desempenoTotalRow(totals):`<tr><td colspan="8" class="empty">Sin datos</td></tr>`;
 }
 function renderDesempenoDepto(){
   const {list,totals}=desempenoBy('depto');
-  document.getElementById('tbody-desp-depto').innerHTML=list.length?list.map(r=>desempenoRow(r,true)).join('')+desempenoTotalRow(totals):`<tr><td colspan="7" class="empty">Sin datos</td></tr>`;
+  document.getElementById('tbody-desp-depto').innerHTML=list.length?list.map(r=>desempenoRow(r,true)).join('')+desempenoTotalRow(totals):`<tr><td colspan="8" class="empty">Sin datos</td></tr>`;
 }
 
 /* ══ J: TOP 10 MARCAS YTD ══ */
@@ -1767,7 +1774,7 @@ function renderL(){
       <td class="r muted">${fmt(r.max)}</td>
       <td class="r">${fmt(r.rango)}</td>
       <td>${r.ratio>5?'🔴':'✅'}</td>
-    </tr>`).join(''):`<tr><td colspan="7" class="empty">Sin datos</td></tr>`;
+    </tr>`).join(''):`<tr><td colspan="8" class="empty">Sin datos</td></tr>`;
 }
 
 /* ══ M: RANKING VENDEDORES ══ */
@@ -1884,7 +1891,7 @@ function renderL(){
       <td class="r">${fmt(r.rango)}</td>
       <td style="text-align:center">${r.ratio > 5 ? '🔴' : '✅'}</td>
     </tr>`).join('')
-    : `<tr><td colspan="7" class="empty">Sin datos</td></tr>`;
+    : `<tr><td colspan="8" class="empty">Sin datos</td></tr>`;
 }
 
 /* ══ TABS ══ */
@@ -1942,6 +1949,7 @@ const KPI_DETAIL = {
   proy_pendiente:  {title:'Proyectos Pendientes',   sub:'Estatus del Proyecto: Pendiente',   pField:'responsable', filter:r=>r.est_proy==='Pendiente'  &&inPeriodo(r.mes_sol)&&opMatchRow(r)},
   proy_completado: {title:'Proyectos Completados',  sub:'Estatus del Proyecto: Completado',  pField:'responsable', filter:r=>r.est_proy==='Completado' &&inPeriodo(r.mes_sol)&&opMatchRow(r)},
   proy_enrevision: {title:'Proyectos en Revisión',  sub:'Estatus del Proyecto: En Revisión', pField:'responsable', filter:r=>r.est_proy==='En Revisión'&&inPeriodo(r.mes_sol)&&opMatchRow(r)},
+  proy_pausado:    {title:'Proyectos Pausados',     sub:'Estatus del Proyecto: Pausado',     pField:'responsable', filter:r=>r.est_proy==='Pausado'    &&inPeriodo(r.mes_sol)&&opMatchRow(r)},
 };
 
 let MODAL_ROWS = [];
