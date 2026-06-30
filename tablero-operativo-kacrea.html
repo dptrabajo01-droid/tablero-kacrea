@@ -837,14 +837,22 @@ function renderKPIs(){
   // Ventas-Facturado: SUMA Monto PPTO donde Aprobado (sin filtro de fecha)
   // ── VENTAS ─────────────────────────────────────────
   // Aprobados en el período (por Mes de Solicitud)
-  // Monto: Aprobados filtrados por período de solicitud
-  const aprPeriodo = RAW.filter(r => r.est_ppto === 'Aprobado' && inPeriodo(r.mes_sol));
+  // Excluimos cualquier proyecto que tenga un presupuesto Pausado: un PPTO
+  // pausado no cuenta como venta facturada aunque otra fila figure Aprobada.
+  const pausadoIds = new Set(
+    RAW.filter(r => r.est_ppto === 'Pausado')
+       .map(r => (r.id||'').trim()).filter(id => id !== '')
+  );
+  // Monto: Aprobados filtrados por período de solicitud (sin pausados)
+  const aprPeriodo = RAW.filter(r => r.est_ppto === 'Aprobado' && inPeriodo(r.mes_sol)
+                                 && !pausadoIds.has((r.id||'').trim()));
   const ventas     = aprPeriodo.reduce((a,r) => a + r.monto_ppto, 0);
 
-  // Cantidad: TODOS los IDs únicos Aprobados
+  // Cantidad: TODOS los IDs únicos Aprobados (sin pausados)
   // Comparación case-insensitive y sin espacios para no perder ninguno
   const nVentas = new Set(
-    RAW.filter(r => (r.est_ppto||'').trim().toLowerCase() === 'aprobado' && inPeriodo(r.mes_sol))
+    RAW.filter(r => (r.est_ppto||'').trim().toLowerCase() === 'aprobado' && inPeriodo(r.mes_sol)
+                && !pausadoIds.has((r.id||'').trim()))
        .map(r => (r.id||'').trim())
        .filter(id => id !== '')
   ).size;
@@ -962,12 +970,17 @@ function renderKPIs(){
 /* ══ A: VENTAS POR DEPARTAMENTO ══ */
 function renderA(){
   const deptos = [...new Set(RAW.filter(r=>inPeriodo(r.mes_sol)).map(r=>r.depto).filter(Boolean))].sort();
+  // IDs con presupuesto Pausado: se excluyen de Ventas (no facturan)
+  const pausadoIds = new Set(
+    RAW.filter(r => r.est_ppto === 'Pausado')
+       .map(r => (r.id||'').trim()).filter(id => id !== '')
+  );
 
   const data = deptos.map(d => {
     const dr = RAW.filter(r => r.depto === d && inSol(r.mes_sol));
 
-    // Ventas: Aprobados suma Monto PPTO
-    const apr_rows = dr.filter(r => r.est_ppto === 'Aprobado');
+    // Ventas: Aprobados suma Monto PPTO (excluye pausados)
+    const apr_rows = dr.filter(r => r.est_ppto === 'Aprobado' && !pausadoIds.has((r.id||'').trim()));
     const ventas   = apr_rows.reduce((a,r) => a + r.monto_ppto, 0);
     const nApr     = new Set(apr_rows.map(r=>(r.id||'').trim()).filter(id=>id!=='')).size;
 
@@ -1952,7 +1965,7 @@ function leadQualifies(id, lw){
 
 /* ══ DETALLE DE TARJETAS (MODAL) ══ */
 const KPI_DETAIL = {
-  ventas:      {title:'Ventas - Facturado',    sub:'Proyectos con presupuesto Aprobado',                 filter:r=>r.est_ppto==='Aprobado'&&inPeriodo(r.mes_sol)},
+  ventas:      {title:'Ventas - Facturado',    sub:'Proyectos con presupuesto Aprobado (sin pausados)',  filter:r=>r.est_ppto==='Aprobado'&&inPeriodo(r.mes_sol)&&!RAW.some(x=>x.est_ppto==='Pausado'&&(x.id||'').trim()===(r.id||'').trim())},
   cobrado:     {title:'Cobrado',               sub:'Aprobados con monto cobrado',                        filter:r=>r.est_ppto==='Aprobado'&&r.monto_cob>0&&inSol(r.mes_sol)},
   porcobrar:   {title:'Por Cobrar',            sub:'Aprobados con saldo pendiente de cobro',             filter:r=>r.est_ppto==='Aprobado'&&inPeriodo(r.mes_sol)&&r.monto_cob<r.monto_ppto},
   porfacturar: {title:'Por Facturar',          sub:'Enviado - Pendiente A. C.',                          filter:r=>r.est_ppto==='Enviado - Pendiente A. C.'&&inPeriodo(r.mes_sol)},
