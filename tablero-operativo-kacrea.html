@@ -60,7 +60,7 @@ select:disabled{opacity:0.4;cursor:not-allowed}
 .main{padding:20px 24px 48px;max-width:1600px;margin:0 auto;overflow-x:hidden}
 
 /* KPI GRID */
-.kpi-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:10px;margin-bottom:20px}
+.kpi-grid{display:grid;grid-template-columns:repeat(9,1fr);gap:10px;margin-bottom:20px}
 .kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 16px 14px;box-shadow:var(--sh);position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s;cursor:default}
 .kpi:hover{transform:translateY(-2px);box-shadow:var(--sh-md)}
 .kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--r) var(--r) 0 0}
@@ -667,6 +667,8 @@ function detectCols(headers){
     svc_asoc:    f(['servicio asociado']),
     descripcion: f(['descripción','descripcion']),
     est_ppto:    f(['estatus de ppto','estatus ppto']),
+    nro_ppto:    f(['nro. de presupuesto','nro de presupuesto','numero de presupuesto']),
+    fecha_ppto:  f(['fecha de ppto','fecha ppto']),
     mes_ar:      f(['mes de a/r','mes a/r']),
     fecha_ar:    f(['fecha de a/r','fecha a/r']),
     monto_ppto:  f(['monto ppto','monto de ppto','monto de presupuesto']),
@@ -727,6 +729,8 @@ async function loadData(){
         svc_asoc:    get(c.svc_asoc),
         descripcion: get(c.descripcion),
         est_ppto:    get(c.est_ppto),
+        nro_ppto:    get(c.nro_ppto),
+        fecha_ppto:  parseDate(get(c.fecha_ppto)),
         mes_ar:      get(c.mes_ar),
         fecha_ar:    parseDate(get(c.fecha_ar)),
         monto_ppto:  parseMonto(c.monto_ppto>=0?v[c.monto_ppto]:0),
@@ -892,6 +896,12 @@ function renderKPIs(){
     ? `sem. anterior · ${_fD(lw.start)}–${_fD(lw.end)}`
     : `esta semana · desde ${_fD(lw.start)}`;
 
+  // ── PRESUPUESTOS PAUSADOS (atípicos) ─────────────────
+  // No cuenta como Aprobado ni Rechazado, sin importar si tiene Fecha de A/R
+  const paus_rows = RAW.filter(r => r.est_ppto === 'Pausado' && inPeriodo(r.mes_sol));
+  const montoPaus = paus_rows.reduce((a,r) => a + r.monto_ppto, 0);
+  const nPaus     = new Set(paus_rows.map(r=>(r.id||'').trim()).filter(id=>id!=='')).size;
+
   document.getElementById('kpi-grid').innerHTML=`
     <div class="kpi c-teal clickable" onclick="openDetail('ventas')">
       <div class="kpi-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
@@ -940,6 +950,12 @@ function renderKPIs(){
       <div class="kpi-lbl">New Leads - Requirements</div>
       <div class="kpi-val">${nNewLeads}</div>
       <div class="kpi-sub">${wkLbl}</div>
+    </div>
+    <div class="kpi c-slate clickable" onclick="openDetail('pausados')">
+      <div class="kpi-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg></div>
+      <div class="kpi-lbl">Presupuestos Pausados</div>
+      <div class="kpi-val">${fmt(montoPaus)}</div>
+      <div class="kpi-sub"><b>${nPaus}</b> proyectos · atípicos</div>
     </div>`;
 }
 
@@ -1245,8 +1261,8 @@ function renderE(){
 
 /* ══ F: ESTATUS PPTO ══ */
 function renderF(){
-  const estatuses = ['Aprobado','Rechazado','Por Elaboración','Enviado - Pendiente A. C.','En Revisión Interna','Proceso de Licitación'];
-  const colors    = ['#0D9488','#DC2626','#0284C7','#D97706','#7C3AED','#0891B2'];
+  const estatuses = ['Aprobado','Rechazado','Por Elaboración','Enviado - Pendiente A. C.','En Revisión Interna','Proceso de Licitación','Pausado'];
+  const colors    = ['#0D9488','#DC2626','#0284C7','#D97706','#7C3AED','#0891B2','#64748B'];
   const counts    = estatuses.map(e =>
     new Set(RAW.filter(r => r.est_ppto === e && inPeriodo(r.mes_sol)).map(r => r.id).filter(Boolean)).size
   );
@@ -1944,6 +1960,7 @@ const KPI_DETAIL = {
   rechazados:  {title:'Proyectos Rechazados',  sub:'Presupuestos rechazados',                            filter:r=>r.est_ppto==='Rechazado'&&inPeriodo(r.mes_sol)},
   tasa:        {title:'Tasa de Cierre',        sub:'Aprobados + Rechazados (base del cálculo)',          filter:r=>['Aprobado','Rechazado'].includes(r.est_ppto)&&inPeriodo(r.mes_sol)},
   newleads:    {title:'New Leads - Requirements', sub:'Proyectos nuevos (excluye renovaciones, salvo Por Elaboración) · lunes: semana anterior', weekly:true, dedupe:true, filter:r=>{const lw=leadsWindow(); return r.fecha_sol&&r.fecha_sol>=lw.start&&r.fecha_sol<=lw.end&&leadQualifies(r.id,lw);}},
+  pausados:    {title:'Presupuestos Pausados',  sub:'Estatus de PPTO: Pausado (atípicos)', layout:'pausado', filter:r=>r.est_ppto==='Pausado'&&inPeriodo(r.mes_sol)},
   // ── Operación · por Estatus del Proyecto (cualquier PPTO + Período + filtros Depto/Resp) ──
   proy_encurso:    {title:'Proyectos en Curso',     sub:'Estatus del Proyecto: En Curso',    pField:'responsable', filter:r=>r.est_proy==='En Curso'   &&inPeriodo(r.mes_sol)&&opMatchRow(r)},
   proy_pendiente:  {title:'Proyectos Pendientes',   sub:'Estatus del Proyecto: Pendiente',   pField:'responsable', filter:r=>r.est_proy==='Pendiente'  &&inPeriodo(r.mes_sol)&&opMatchRow(r)},
@@ -1957,7 +1974,7 @@ let MODAL_ROWS = [];
 // tarjetas de arriba) o 'responsable' (Responsable, tarjetas de Operación)
 let MODAL_PFIELD='canal_int', MODAL_PLABEL='Todos los responsables de cuentas';
 // El modal de Operación añade columnas de fechas (Revisión/Entrega/Límite)
-let MODAL_ISOP=false, MODAL_SHOWDUE=false;
+let MODAL_ISOP=false, MODAL_SHOWDUE=false, MODAL_LAYOUT='base';
 // Filtro de vencimiento: 'todos' | 'porvencer' | 'vencidos' · umbral de días compartido
 let MODAL_DUE='todos', AG_DUE='todos', CAL_DUE='todos', DUE_DAYS=7;
 function isActiveProy(r){ return !['Completado','Cancelado'].includes(r.est_proy); }
@@ -1967,7 +1984,7 @@ function dueClassOf(r){ if(!isActiveProy(r)||!r.fecha_lim) return 'na'; const t=
 function estPill(e){
   const map={
     'Aprobado':'pill-green','Rechazado':'pill-red','Por Elaboración':'pill-blue',
-    'Enviado - Pendiente A. C.':'pill-amber','En Revisión Interna':'pill-purple','Proceso de Licitación':'pill-teal'
+    'Enviado - Pendiente A. C.':'pill-amber','En Revisión Interna':'pill-purple','Proceso de Licitación':'pill-teal','Pausado':'pill-gray'
   };
   return map[e]||'pill-gray';
 }
@@ -1985,10 +2002,12 @@ function openDetail(key){
   MODAL_PFIELD=cfg.pField||'canal_int';
   MODAL_PLABEL=MODAL_PFIELD==='responsable'?'Todos los responsables':'Todos los responsables de cuentas';
   MODAL_ISOP=MODAL_PFIELD==='responsable';
+  MODAL_LAYOUT=cfg.layout||(MODAL_ISOP?'op':'base');
   document.getElementById('modal-f-ppto').style.display=MODAL_ISOP?'none':'';
-  document.getElementById('modal-thead').innerHTML=MODAL_ISOP
-    ? '<th>Fecha Solicitud</th><th>Cliente</th><th>Proyecto</th><th>Servicio</th><th>Departamento</th><th>Responsable</th><th class="r">F. Inicio</th><th class="r">F. Revisión</th><th class="r">F. Entrega</th><th class="r">F. Límite</th>'
-    : '<th>Fecha Solicitud</th><th>Canal Interno</th><th>Cliente</th><th>Proyecto</th><th>Servicio</th><th>Departamento</th><th>Responsable</th><th>Estatus PPTO</th><th class="r">Monto</th>';
+  document.getElementById('modal-thead').innerHTML=
+    MODAL_LAYOUT==='op'      ? '<th>Fecha Solicitud</th><th>Cliente</th><th>Proyecto</th><th>Servicio</th><th>Departamento</th><th>Responsable</th><th class="r">F. Inicio</th><th class="r">F. Revisión</th><th class="r">F. Entrega</th><th class="r">F. Límite</th>'
+    : MODAL_LAYOUT==='pausado'? '<th>Cliente</th><th>Proyecto</th><th>Servicio</th><th>Estatus PPTO</th><th>Nro. PPTO</th><th class="r">F. PPTO</th><th class="r">F. A/R PPTO</th><th>Estatus Proyecto</th><th>Departamento</th>'
+    :                           '<th>Fecha Solicitud</th><th>Canal Interno</th><th>Cliente</th><th>Proyecto</th><th>Servicio</th><th>Departamento</th><th>Responsable</th><th>Estatus PPTO</th><th class="r">Monto</th>';
   // Barra de vencimiento: solo en modales de Operación con proyectos activos
   MODAL_DUE='todos';
   MODAL_SHOWDUE=MODAL_ISOP && MODAL_ROWS.some(r=>isActiveProy(r));
@@ -2013,7 +2032,7 @@ function renderModalRows(rows){
   const cnt=document.getElementById('modal-count');
   const foot=document.getElementById('modal-foot');
   const today=new Date(); today.setHours(0,0,0,0);
-  const nCols=MODAL_ISOP?10:9;
+  const nCols=MODAL_LAYOUT==='op'?10:9;
   if(!rows.length){
     tb.innerHTML=`<tr><td colspan="${nCols}" class="empty">Sin registros</td></tr>`;
     cnt.textContent='0 proyectos';
@@ -2037,11 +2056,12 @@ function renderModalRows(rows){
   // Celda de Fecha Límite: resalta si está por vencer/vencida y el proyecto sigue activo
   const limCell=(fl,estProy)=>{ if(!fl) return '<td class="r muted">—</td>'; const txt=fl.toLocaleDateString('es-MX'); if(!['Completado','Cancelado'].includes(estProy)){ const dias=daysBetween(today,fl); if(dias<0) return `<td class="r"><span class="pill pill-red">${txt} · ${Math.abs(dias)}d venc.</span></td>`; if(dias<=DUE_DAYS) return `<td class="r"><span class="pill pill-amber">${txt} · ${dias===0?'hoy':dias+'d'}</span></td>`; } return `<td class="r muted">${txt}</td>`; };
   const limParent=(rs,estProy)=>{ const ts=[...new Set(rs.map(x=>x.fecha_lim?x.fecha_lim.getTime():null).filter(v=>v!==null))]; if(!ts.length)return '<td class="r muted">—</td>'; if(ts.length>1)return '<td class="r muted">Varios</td>'; return limCell(new Date(ts[0]),estProy); };
+  const epPill=e=>{ const v=(e||'').trim(); if(!v||v==='—') return '—'; if(v==='Varios') return '<span class="pill pill-gray">Varios</span>'; const c=v==='En Revisión'?'pill-purple':v==='Completado'?'pill-green':v==='Cancelado'?'pill-red':v==='Pausado'?'pill-gray':'pill-blue'; return `<span class="pill ${c}">${v}</span>`; };
 
   let html='';
   groups.forEach((g,gi)=>{
     const rs=g.rows, multi=rs.length>1, head=rs[0], key='g'+gi;
-    if(MODAL_ISOP){
+    if(MODAL_LAYOUT==='op'){
       // ── Modal SLIM de Operación: Proyecto · Cliente · Responsable · Depto · F.Rev · F.Ent · F.Límite ──
       const estProy=pick(rs,'est_proy');
       html+=`<tr class="grp-parent${multi?' has-children':''}"${multi?` onclick="toggleGroup('${key}')"`:''}>
@@ -2069,6 +2089,35 @@ function renderModalRows(rows){
             <td class="r muted">${fDate(r.fecha_rev)}</td>
             <td class="r muted">${fDate(r.fecha_ent)}</td>
             ${limCell(r.fecha_lim,r.est_proy)}
+          </tr>`;
+        });
+      }
+    } else if(MODAL_LAYOUT==='pausado'){
+      // ── Modal "Presupuestos Pausados" (columnas atípicas) ──
+      const svcA=pick(rs,'svc_asoc'), estP=pick(rs,'est_ppto');
+      html+=`<tr class="grp-parent${multi?' has-children':''}"${multi?` onclick="toggleGroup('${key}')"`:''}>
+        <td style="font-weight:500">${multi?`<span class="grp-arrow" id="arr-${key}">▶</span>`:'<span class="grp-spacer"></span>'}${head.cliente||'—'}${multi?` <span class="grp-badge">${rs.length}</span>`:''}</td>
+        <td class="muted">${pick(rs,'proyecto')}</td>
+        <td class="muted">${pick(rs,'svc_own')}${svcA!=='—'?` · ${svcA}`:''}</td>
+        <td>${estP==='—'?'—':`<span class="pill ${estP==='Varios'?'pill-gray':estPill(estP)}">${estP}</span>`}</td>
+        <td class="muted">${pick(rs,'nro_ppto')}</td>
+        <td class="r muted">${pickDateStr(rs,'fecha_ppto')}</td>
+        <td class="r muted">${pickDateStr(rs,'fecha_ar')}</td>
+        <td>${epPill(pick(rs,'est_proy'))}</td>
+        <td>${deptoPill(pick(rs,'depto'))}</td>
+      </tr>`;
+      if(multi){
+        rs.forEach(r=>{
+          html+=`<tr class="grp-child child-${key}" style="display:none">
+            <td class="muted" style="padding-left:30px">${r.cliente||'—'}</td>
+            <td class="muted">${r.proyecto||'—'}</td>
+            <td class="muted">${r.svc_own||'—'}${r.svc_asoc?` · ${r.svc_asoc}`:''}</td>
+            <td><span class="pill ${estPill(r.est_ppto)}">${r.est_ppto||'—'}</span></td>
+            <td class="muted">${r.nro_ppto||'—'}</td>
+            <td class="r muted">${fDate(r.fecha_ppto)}</td>
+            <td class="r muted">${fDate(r.fecha_ar)}</td>
+            <td>${epPill(r.est_proy)}</td>
+            <td>${deptoPill(r.depto)}</td>
           </tr>`;
         });
       }
@@ -2109,7 +2158,7 @@ function renderModalRows(rows){
 
   const nProj=groups.length;
   cnt.textContent=nProj+' proyecto'+(nProj!==1?'s':'');
-  foot.innerHTML=MODAL_ISOP
+  foot.innerHTML=MODAL_LAYOUT!=='base'
     ? `<span>Total · ${nProj} proyecto${nProj!==1?'s':''}</span><span class="mf-total"></span>`
     : `<span>Total · ${nProj} proyecto${nProj!==1?'s':''}</span><span class="mf-total">${fmt(total)}</span>`;
 }
