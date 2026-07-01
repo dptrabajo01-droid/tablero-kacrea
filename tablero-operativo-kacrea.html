@@ -226,14 +226,17 @@ tbody tr:hover td{background:var(--surface2)}
 .pe-sm-val{font-size:17px;font-weight:700;font-family:'DM Mono',monospace}
 .pe-mode-tag{margin-left:auto;font-size:10px;font-weight:600;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 12px}
 .pe-rows{display:flex;flex-direction:column;gap:11px}
-.pe-row{display:grid;grid-template-columns:120px 1fr 150px 46px;align-items:center;gap:12px}
+.pe-row{display:grid;grid-template-columns:120px 1fr 118px 46px;align-items:center;gap:12px}
 .pe-name{font-size:12px;font-weight:500;display:flex;align-items:center;white-space:nowrap}
-.pe-track{position:relative;height:22px;background:var(--surface2);border-radius:6px;overflow:visible;border:1px solid var(--border)}
+.pe-track{position:relative;height:24px;background:var(--surface2);border-radius:6px;overflow:visible;border:1px solid var(--border)}
 .pe-fill{position:absolute;left:0;top:0;height:100%;border-radius:6px 0 0 6px;transition:width .5s cubic-bezier(.4,0,.2,1);min-width:2px}
+.pe-barval{position:absolute;top:50%;font-size:10.5px;font-weight:700;font-family:'DM Mono',monospace;white-space:nowrap;pointer-events:none}
+.pe-barval.in{transform:translate(-100%,-50%);color:#fff;padding-right:8px}
+.pe-barval.out{transform:translateY(-50%);padding-left:7px;font-weight:700}
 .pe-marker{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--text);border-radius:2px}
 .pe-marker::after{content:'';position:absolute;top:-4px;left:-3px;border-left:4px solid transparent;border-right:4px solid transparent;border-top:5px solid var(--text)}
 .pe-val{font-size:11px;font-family:'DM Mono',monospace;text-align:right;font-weight:600;white-space:nowrap}
-.pe-goal{color:var(--faint);font-weight:400}
+.pe-goal{color:var(--faint);font-weight:400;font-family:inherit;text-transform:uppercase;font-size:8.5px;letter-spacing:.05em}
 .pe-pct{font-size:13px;font-weight:700;text-align:right;font-family:'DM Mono',monospace}
 .pe-legend{display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin-top:16px;padding-top:12px;border-top:1px solid var(--border);font-size:10px;color:var(--muted)}
 .pe-legend span{display:flex;align-items:center;gap:5px}
@@ -1224,13 +1227,15 @@ function renderPE(){
     const fillW = Math.min(r.ing/scale*100, 100);
     const markL = Math.min(r.target/scale*100, 100);
     const col = peColor(r.pct);
+    const inside = fillW > 32;   // el monto cabe dentro de la barra
     return `<div class="pe-row">
       <div class="pe-name"><span class="dot" style="background:${deptoColor(r.d)}"></span>${r.d}</div>
       <div class="pe-track">
         <div class="pe-fill" style="width:${fillW}%;background:${col}"></div>
+        <div class="pe-barval ${inside?'in':'out'}" style="left:${fillW}%;${inside?'':'color:'+col}">${fmt(r.ing)}</div>
         <div class="pe-marker" style="left:${markL}%" title="Piso: ${fmt(r.target)}"></div>
       </div>
-      <div class="pe-val">${fmt(r.ing)}<span class="pe-goal"> / ${fmt(r.target)}</span></div>
+      <div class="pe-val"><span class="pe-goal">Meta</span> ${fmt(r.target)}</div>
       <div class="pe-pct" style="color:${col}">${r.pct.toFixed(0)}%</div>
     </div>`;
   }).join('');
@@ -1298,19 +1303,19 @@ function openPEDetail(){
           <td class="r" style="color:var(--teal)">${fmt(r.ingAnio)}</td>
           <td class="c">${pill(r.pctAnio)}</td>
         </tr>`).join('')}
+        <tr class="tbl-total">
+          <td><b>Total</b></td>
+          <td class="r">${fmt(tot.cf)}</td>
+          <td class="r">${fmt(tot.ga)}</td>
+          <td class="r">${fmt(tot.gastos)}</td>
+          <td class="r">${fmt(tot.piso)}</td>
+          <td class="r">${fmt(tot.ingMes)}</td>
+          <td class="c">${pill(totPctMes)}</td>
+          <td class="r">${fmt(tot.pisoA)}</td>
+          <td class="r">${fmt(tot.ingAnio)}</td>
+          <td class="c">${pill(totPctAnio)}</td>
+        </tr>
       </tbody>
-      <tfoot><tr class="tbl-total">
-        <td><b>Total</b></td>
-        <td class="r">${fmt(tot.cf)}</td>
-        <td class="r">${fmt(tot.ga)}</td>
-        <td class="r">${fmt(tot.gastos)}</td>
-        <td class="r">${fmt(tot.piso)}</td>
-        <td class="r">${fmt(tot.ingMes)}</td>
-        <td class="c">${pill(totPctMes)}</td>
-        <td class="r">${fmt(tot.pisoA)}</td>
-        <td class="r">${fmt(tot.ingAnio)}</td>
-        <td class="c">${pill(totPctAnio)}</td>
-      </tr></tfoot>
     </table></div>
     <div class="pe-note">Punto de equilibrio = piso de venta mensual (venta mínima para cubrir Costo Fijo + Gasto Asignado). Anual = piso × 12. Ingreso Neto = Monto PPTO aprobado (sin diferencial cambiario ni pausados).</div>`;
   document.getElementById('pe-modal-ov').classList.add('on');
@@ -2566,7 +2571,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeDetail(); cl
     <div class="modal-hdr">
       <div>
         <div class="modal-title">Punto de Equilibrio · Detalle por Departamento</div>
-        <div class="modal-sub">Escenario 2 · venta mínima mensual y anual para cubrir gastos (Costo Fijo + Gasto Asignado)</div>
+        <div class="modal-sub">Venta mínima mensual y anual para cubrir gastos (Costo Fijo + Gasto Asignado)</div>
       </div>
       <button class="modal-close" onclick="closePEDetail()" aria-label="Cerrar">✕</button>
     </div>
