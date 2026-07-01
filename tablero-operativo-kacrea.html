@@ -218,8 +218,7 @@ tbody tr:hover td{background:var(--surface2)}
 .pe-toggle{display:inline-flex;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:2px;gap:2px}
 .pe-tg{border:none;background:transparent;color:var(--muted);font-size:11px;font-weight:600;padding:5px 12px;border-radius:6px;cursor:pointer;transition:all .15s;font-family:inherit}
 .pe-tg.active{background:var(--surface);color:var(--text);box-shadow:var(--sh)}
-.pe-body{cursor:pointer;border-radius:8px;transition:background .15s}
-.pe-body:hover{background:var(--surface2)}
+.pe-body{cursor:pointer;border-radius:8px}
 .pe-summary{display:flex;align-items:stretch;gap:12px;flex-wrap:wrap;margin-bottom:18px}
 .pe-sm{display:flex;flex-direction:column;gap:3px;padding:10px 14px;border:1px solid var(--border);border-radius:10px;background:var(--surface2);min-width:130px}
 .pe-sm-lbl{font-size:9px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.06em}
@@ -528,8 +527,9 @@ tbody tr:hover td{background:var(--surface2)}
     <div class="card-hdr">
       <div><div class="card-title">Punto de Equilibrio por Departamento</div><div class="card-sub">Ingreso Neto vs. venta mínima para cubrir gastos (piso de venta) · clic para ver el detalle</div></div>
       <div class="pe-toggle">
-        <button class="pe-tg active" data-pemode="anual" onclick="setPEMode('anual')">Anual</button>
         <button class="pe-tg" data-pemode="mensual" onclick="setPEMode('mensual')">Mensual</button>
+        <button class="pe-tg active" data-pemode="anual_fecha" onclick="setPEMode('anual_fecha')">Anual · a la fecha</button>
+        <button class="pe-tg" data-pemode="anual_12" onclick="setPEMode('anual_12')">Anual · 12 meses</button>
       </div>
     </div>
     <div id="content-pe" class="pe-body clickable" onclick="openPEDetail()"><div class="sk" style="height:200px;border-radius:8px"></div></div>
@@ -1200,19 +1200,30 @@ const PE_CONFIG = {
   'Audiovisual': { costoFijo:1300, gastoAsignado:2650, pctGasto:0.20, piso:4500 }
 };
 const PE_ORDER = ['Producción','Digital','Marketing','Diseño','Audiovisual'];
-let PE_MODE = 'anual';
+let PE_MODE = 'anual_fecha';  // 'mensual' | 'anual_fecha' | 'anual_12'
 
+// Meses transcurridos = último mes con ventas aprobadas (ej. Julio → 7)
+function peMesesTranscurridos(){
+  const idxs = RAW.filter(r=>r.est_ppto==='Aprobado' && r.mes_sol)
+                  .map(r=>mesIdx(normMes(r.mes_sol))).filter(i=>i>=0);
+  return idxs.length ? Math.max(...idxs)+1 : 12;
+}
 // Ingreso Neto (Monto PPTO Aprobado, sin pausados, sin diferencial) por depto
 function peIngresoNeto(depto, mode){
   const pausados = new Set(RAW.filter(r=>r.est_ppto==='Pausado').map(r=>(r.id||'').trim()).filter(Boolean));
   const base = RAW.filter(r=> r.depto===depto && r.est_ppto==='Aprobado' && !pausados.has((r.id||'').trim()));
   const anual = base.reduce((a,r)=>a+r.monto_ppto,0);
-  if(mode==='anual') return { valor:anual, etiqueta:'del año' };
+  if(mode!=='mensual') return { valor:anual, etiqueta:'del año' };
   const vSel = document.getElementById('f-sol').value;
   if(vSel){ return { valor: base.filter(r=>normMes(r.mes_sol)===vSel).reduce((a,r)=>a+r.monto_ppto,0), etiqueta:vSel }; }
   return { valor: anual/12, etiqueta:'prom. mensual' };
 }
-function peTarget(depto, mode){ const c=PE_CONFIG[depto]; return mode==='anual'? c.piso*12 : c.piso; }
+function peTarget(depto, mode){
+  const c=PE_CONFIG[depto];
+  if(mode==='mensual') return c.piso;
+  if(mode==='anual_fecha') return c.piso * peMesesTranscurridos();
+  return c.piso * 12;  // anual_12
+}
 function peColor(pct){ return pct>=100?'#22C55E': pct>=75?'#F59E0B':'#DC2626'; }
 function peEstado(pct){ return pct>=100?'Cubre': pct>=75?'Cerca':'Debajo'; }
 
@@ -1246,11 +1257,16 @@ function renderPE(){
   const totTarget = rows.reduce((a,r)=>a+r.target,0);
   const totPct = totTarget>0? totIng/totTarget*100 : 0;
   const vSel = document.getElementById('f-sol').value;
-  const lblMode = mode==='anual'?'Anual · piso × 12': (vSel? 'Mensual · '+vSel : 'Mensual · promedio');
+  const esAnual = mode!=='mensual';
+  const meses = peMesesTranscurridos();
+  const lblMode = mode==='anual_12' ? 'Anual · piso × 12 meses'
+    : mode==='anual_fecha' ? `Anual · a la fecha (${meses} ${meses===1?'mes':'meses'} · piso × ${meses})`
+    : (vSel? 'Mensual · '+vSel : 'Mensual · promedio');
+  const metaLbl = mode==='anual_fecha' ? 'Meta a la fecha (piso)' : 'Meta total (piso)';
   el.innerHTML = `
     <div class="pe-summary">
-      <div class="pe-sm"><span class="pe-sm-lbl">Ingreso Neto ${mode==='anual'?'del año':'del período'}</span><span class="pe-sm-val" style="color:var(--teal)">${fmt(totIng)}</span></div>
-      <div class="pe-sm"><span class="pe-sm-lbl">Meta total (piso)</span><span class="pe-sm-val">${fmt(totTarget)}</span></div>
+      <div class="pe-sm"><span class="pe-sm-lbl">Ingreso Neto ${esAnual?'del año':'del período'}</span><span class="pe-sm-val" style="color:var(--teal)">${fmt(totIng)}</span></div>
+      <div class="pe-sm"><span class="pe-sm-lbl">${metaLbl}</span><span class="pe-sm-val">${fmt(totTarget)}</span></div>
       <div class="pe-sm"><span class="pe-sm-lbl">Cumplimiento</span><span class="pe-sm-val" style="color:${peColor(totPct)}">${totPct.toFixed(0)}%</span></div>
       <div class="pe-mode-tag">${lblMode}</div>
     </div>
