@@ -210,6 +210,7 @@ tbody td.r{text-align:right;font-family:'DM Mono',monospace;font-size:11px}
 tbody td.muted{color:var(--muted)}
 tbody tr:last-child td{border-bottom:none}
 tbody tr:hover td{background:var(--surface2)}
+.tbl-subtotal td{background:var(--surface2);opacity:.92;border-top:1px dashed var(--border-md)}
 .tbl-total td{font-weight:700;background:var(--surface2) !important;border-top:2px solid var(--border-md)}
 .tbl-total td.r{color:var(--teal)}
 .empty{text-align:center;padding:28px;color:var(--faint);font-size:12px}
@@ -992,9 +993,10 @@ function renderA(){
   const data = deptos.map(d => {
     const dr = RAW.filter(r => r.depto === d && inSol(r.mes_sol));
 
-    // Ventas: Aprobados suma Monto PPTO + Diferencial Cambiario (excluye pausados)
+    // Ventas: Aprobados suma SOLO Monto PPTO (venta bruta); el Diferencial
+    // Cambiario va aparte en su propia fila, antes del Total (excluye pausados)
     const apr_rows = dr.filter(r => r.est_ppto === 'Aprobado' && !pausadoIds.has((r.id||'').trim()));
-    const ventas   = apr_rows.reduce((a,r) => a + r.monto_ppto + (r.dif_camb||0), 0);
+    const ventas   = apr_rows.reduce((a,r) => a + r.monto_ppto, 0);
     const nApr     = new Set(apr_rows.map(r=>(r.id||'').trim()).filter(id=>id!=='')).size;
 
     // Cobrado: Aprobados con Monto Cobrado > 0
@@ -1026,7 +1028,11 @@ function renderA(){
   }).filter(r => r.ventas > 0 || r.cotizacion > 0 || r.rechazado > 0)
     .sort((a,b) => b.ventas - a.ventas);
 
-  const totalVentas   = data.reduce((a,r) => a + r.ventas, 0);
+  // Diferencial Cambiario total (mismas filas de venta: Aprobado, período, sin pausados)
+  const difTotal = RAW.filter(r => r.est_ppto === 'Aprobado' && inSol(r.mes_sol) && !pausadoIds.has((r.id||'').trim()))
+                      .reduce((a,r) => a + (r.dif_camb||0), 0);
+  const totalBruta    = data.reduce((a,r) => a + r.ventas, 0);
+  const totalVentas   = totalBruta + difTotal;
   const totalCobrado  = data.reduce((a,r) => a + r.cobrado, 0);
   const totalPorCob   = data.reduce((a,r) => a + r.porCobrar, 0);
   const totalPorFact  = data.reduce((a,r) => a + r.porFacturar_d, 0);
@@ -1050,6 +1056,17 @@ function renderA(){
       <td class="r"><span class="pill ${tasaCol}">${r.tasa}</span></td>
     </tr>`;
   }).join('') + `
+    <tr class="tbl-subtotal">
+      <td style="font-weight:500"><span class="dot" style="background:#3B82F6"></span>Diferencial Cambiario</td>
+      <td class="r" style="color:var(--teal);font-weight:600">${fmt(difTotal)}</td>
+      <td class="r"><span class="pill pill-blue">${totalVentas>0?(difTotal/totalVentas*100).toFixed(1):'0'}%</span></td>
+      <td class="r">—</td>
+      <td class="r">—</td>
+      <td class="r">—</td>
+      <td class="r">—</td>
+      <td class="r">—</td>
+      <td class="r">—</td>
+    </tr>
     <tr class="tbl-total">
       <td><b>Total</b></td>
       <td class="r">${fmt(totalVentas)}</td>
