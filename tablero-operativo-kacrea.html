@@ -1057,7 +1057,18 @@ function renderA(){
     </tr>`;
   }).join('') + `
     <tr class="tbl-subtotal">
-      <td style="font-weight:500"><span class="dot" style="background:#3B82F6"></span>Diferencial Cambiario</td>
+      <td style="font-weight:600"><span class="dot" style="background:#22C55E"></span>Ingreso Neto</td>
+      <td class="r" style="color:var(--teal);font-weight:600">${fmt(totalBruta)}</td>
+      <td class="r"><span class="pill pill-blue">${totalVentas>0?(totalBruta/totalVentas*100).toFixed(1):'0'}%</span></td>
+      <td class="r">—</td>
+      <td class="r">—</td>
+      <td class="r">—</td>
+      <td class="r">—</td>
+      <td class="r">—</td>
+      <td class="r">—</td>
+    </tr>
+    <tr class="tbl-subtotal">
+      <td style="font-weight:500"><span class="dot" style="background:#DC2626"></span>Diferencial Cambiario</td>
       <td class="r" style="color:var(--teal);font-weight:600">${fmt(difTotal)}</td>
       <td class="r"><span class="pill pill-blue">${totalVentas>0?(difTotal/totalVentas*100).toFixed(1):'0'}%</span></td>
       <td class="r">—</td>
