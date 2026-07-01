@@ -366,6 +366,11 @@ tbody tr:hover td{background:var(--surface2)}
 .modal-search{flex:1;min-width:180px;border:1px solid var(--border-md);border-radius:var(--r-sm);padding:8px 12px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);outline:none;transition:border-color .2s}
 .modal-search:focus{border-color:var(--purple);box-shadow:0 0 0 3px var(--purple-dim)}
 .modal-count{font-size:11px;font-family:'DM Mono',monospace;color:var(--faint);white-space:nowrap}
+.modal-cards{display:flex;gap:12px;padding:14px 22px 4px;flex-wrap:wrap}
+.modal-card{flex:1 1 200px;border:1px solid var(--border);border-radius:10px;padding:12px 14px;background:var(--surface2)}
+.modal-card .mc-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;font-weight:600}
+.modal-card .mc-val{font-size:20px;font-weight:700;margin-top:4px}
+@media(max-width:768px){.modal-cards{padding:12px 16px 2px}}
 .modal-body{overflow-y:auto;padding:4px 22px 22px}
 .modal-body table{min-width:820px}
 .modal-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 22px;border-top:1px solid var(--border-md);background:var(--surface2);flex-shrink:0;font-size:13px;font-weight:700;color:var(--text)}
@@ -672,6 +677,7 @@ function detectCols(headers){
     mes_ar:      f(['mes de a/r','mes a/r']),
     fecha_ar:    f(['fecha de a/r','fecha a/r']),
     monto_ppto:  f(['monto ppto','monto de ppto','monto de presupuesto']),
+    dif_camb:    f(['diferencial']),
     fecha_fact:  f(['fecha de facturación','fecha facturación','fecha de facturacion']),
     nro_fact:    f(['nro. de factura','nro de factura','numero de factura']),
     monto_cob:   f(['monto cobrado']),
@@ -734,6 +740,7 @@ async function loadData(){
         mes_ar:      get(c.mes_ar),
         fecha_ar:    parseDate(get(c.fecha_ar)),
         monto_ppto:  parseMonto(c.monto_ppto>=0?v[c.monto_ppto]:0),
+        dif_camb:    parseMonto(c.dif_camb>=0?v[c.dif_camb]:0),
         fecha_fact:  parseDate(get(c.fecha_fact)),
         nro_fact:    get(c.nro_fact),
         monto_cob:   parseMonto(c.monto_cob>=0?v[c.monto_cob]:0),
@@ -846,7 +853,12 @@ function renderKPIs(){
   // Monto: Aprobados filtrados por período de solicitud (sin pausados)
   const aprPeriodo = RAW.filter(r => r.est_ppto === 'Aprobado' && inPeriodo(r.mes_sol)
                                  && !pausadoIds.has((r.id||'').trim()));
-  const ventas     = aprPeriodo.reduce((a,r) => a + r.monto_ppto, 0);
+  // Venta Bruta = suma de Monto PPTO (Sin IVA) de Aprobados
+  const ventaBruta = aprPeriodo.reduce((a,r) => a + r.monto_ppto, 0);
+  // Diferencial Cambiario = suma de Monto por diferencial Cambiario (mismas filas)
+  const difCamb    = aprPeriodo.reduce((a,r) => a + (r.dif_camb||0), 0);
+  // Ventas-Facturado = Venta Bruta + Diferencial Cambiario
+  const ventas     = ventaBruta + difCamb;
 
   // Cantidad: TODOS los IDs únicos Aprobados (sin pausados)
   // Comparación case-insensitive y sin espacios para no perder ninguno
@@ -979,9 +991,9 @@ function renderA(){
   const data = deptos.map(d => {
     const dr = RAW.filter(r => r.depto === d && inSol(r.mes_sol));
 
-    // Ventas: Aprobados suma Monto PPTO (excluye pausados)
+    // Ventas: Aprobados suma Monto PPTO + Diferencial Cambiario (excluye pausados)
     const apr_rows = dr.filter(r => r.est_ppto === 'Aprobado' && !pausadoIds.has((r.id||'').trim()));
-    const ventas   = apr_rows.reduce((a,r) => a + r.monto_ppto, 0);
+    const ventas   = apr_rows.reduce((a,r) => a + r.monto_ppto + (r.dif_camb||0), 0);
     const nApr     = new Set(apr_rows.map(r=>(r.id||'').trim()).filter(id=>id!=='')).size;
 
     // Cobrado: Aprobados con Monto Cobrado > 0
@@ -2027,6 +2039,18 @@ function openDetail(key){
   const _dueBar=document.getElementById('modal-due-bar'); if(_dueBar) _dueBar.style.display=MODAL_SHOWDUE?'flex':'none';
   document.querySelectorAll('#modal-due-bar .due-chip').forEach(b=>b.classList.toggle('active',b.dataset.due==='todos'));
   const _dd=document.getElementById('modal-due-days'); if(_dd) _dd.value=DUE_DAYS;
+  // Tarjetas resumen (solo Ventas): desglose Venta Bruta + Diferencial Cambiario
+  const _mc=document.getElementById('modal-cards');
+  if(_mc){
+    if(key==='ventas'){
+      const vb=MODAL_ROWS.reduce((a,r)=>a+(r.monto_ppto||0),0);
+      const dc=MODAL_ROWS.reduce((a,r)=>a+(r.dif_camb||0),0);
+      _mc.innerHTML=
+        '<div class="modal-card"><div class="mc-lbl">Venta Bruta</div><div class="mc-val">'+fmt(vb)+'</div></div>'+
+        '<div class="modal-card"><div class="mc-lbl">Diferencial Cambiario</div><div class="mc-val">'+fmt(dc)+'</div></div>';
+      _mc.style.display='flex';
+    } else { _mc.style.display='none'; _mc.innerHTML=''; }
+  }
   poblarModalFiltros(MODAL_ROWS);
   renderModalRows(MODAL_ROWS);
   updateModalClearVisibility();
@@ -2311,6 +2335,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeDetail(); cl
       </div>
       <label class="due-days">≤ <select id="modal-due-days" onchange="setDueDays(this.value)"><option>3</option><option selected>7</option><option>15</option></select> días</label>
     </div>
+    <div class="modal-cards" id="modal-cards" style="display:none"></div>
     <div class="modal-body">
       <div class="tbl-wrap"><table>
         <thead><tr id="modal-thead">
