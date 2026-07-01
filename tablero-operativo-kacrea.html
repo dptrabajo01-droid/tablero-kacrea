@@ -214,6 +214,41 @@ tbody tr:hover td{background:var(--surface2)}
 .tbl-total td{font-weight:700;background:var(--surface2) !important;border-top:2px solid var(--border-md)}
 .tbl-total td.r{color:var(--teal)}
 .empty{text-align:center;padding:28px;color:var(--faint);font-size:12px}
+/* ── Punto de Equilibrio ── */
+.pe-toggle{display:inline-flex;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:2px;gap:2px}
+.pe-tg{border:none;background:transparent;color:var(--muted);font-size:11px;font-weight:600;padding:5px 12px;border-radius:6px;cursor:pointer;transition:all .15s;font-family:inherit}
+.pe-tg.active{background:var(--surface);color:var(--text);box-shadow:var(--sh)}
+.pe-body{cursor:pointer;border-radius:8px;transition:background .15s}
+.pe-body:hover{background:var(--surface2)}
+.pe-summary{display:flex;align-items:center;gap:22px;flex-wrap:wrap;padding:6px 4px 14px;border-bottom:1px solid var(--border);margin-bottom:14px}
+.pe-sm{display:flex;flex-direction:column;gap:2px}
+.pe-sm-lbl{font-size:9px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.06em}
+.pe-sm-val{font-size:17px;font-weight:700;font-family:'DM Mono',monospace}
+.pe-mode-tag{margin-left:auto;font-size:10px;font-weight:600;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 12px}
+.pe-rows{display:flex;flex-direction:column;gap:11px}
+.pe-row{display:grid;grid-template-columns:120px 1fr 150px 46px;align-items:center;gap:12px}
+.pe-name{font-size:12px;font-weight:500;display:flex;align-items:center;white-space:nowrap}
+.pe-track{position:relative;height:22px;background:var(--surface2);border-radius:6px;overflow:visible;border:1px solid var(--border)}
+.pe-fill{position:absolute;left:0;top:0;height:100%;border-radius:6px 0 0 6px;transition:width .5s cubic-bezier(.4,0,.2,1);min-width:2px}
+.pe-marker{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--text);border-radius:2px}
+.pe-marker::after{content:'';position:absolute;top:-4px;left:-3px;border-left:4px solid transparent;border-right:4px solid transparent;border-top:5px solid var(--text)}
+.pe-val{font-size:11px;font-family:'DM Mono',monospace;text-align:right;font-weight:600;white-space:nowrap}
+.pe-goal{color:var(--faint);font-weight:400}
+.pe-pct{font-size:13px;font-weight:700;text-align:right;font-family:'DM Mono',monospace}
+.pe-legend{display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin-top:16px;padding-top:12px;border-top:1px solid var(--border);font-size:10px;color:var(--muted)}
+.pe-legend span{display:flex;align-items:center;gap:5px}
+.pe-legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.pe-legend .mk{width:2px;height:12px;background:var(--text);border-radius:2px}
+.pe-hint{margin-left:auto;color:var(--blue);font-weight:600}
+/* modal PE */
+.pe-assump{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.pe-ac{border:1px solid var(--border);border-radius:10px;padding:12px 14px;background:var(--surface2)}
+.pe-ac-l{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:600;line-height:1.3}
+.pe-ac-v{font-size:18px;font-weight:700;margin-top:5px;font-family:'DM Mono',monospace}
+.pe-table th.c,.pe-table td.c{text-align:center}
+.pe-badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;white-space:nowrap}
+.pe-note{font-size:10.5px;color:var(--faint);margin-top:14px;line-height:1.5}
+@media(max-width:768px){.pe-row{grid-template-columns:88px 1fr 60px;gap:8px}.pe-val{display:none}.pe-assump{grid-template-columns:1fr 1fr}}
 
 /* PILLS */
 .pill{display:inline-block;font-size:10px;font-weight:600;padding:2px 8px;border-radius:100px;white-space:nowrap}
@@ -481,6 +516,17 @@ tbody tr:hover td{background:var(--surface2)}
       <div class="card-hdr"><div><div class="card-title">Concentración de Cartera</div><div class="card-sub">Top clientes como % del total aprobado</div></div><div class="card-badge badge-green" id="badge-b">Verde</div></div>
       <div id="content-b"><div class="sk" style="height:120px;border-radius:8px"></div></div>
     </div>
+  </div>
+
+  <div class="full card">
+    <div class="card-hdr">
+      <div><div class="card-title">Punto de Equilibrio por Departamento</div><div class="card-sub">Ingreso Neto vs. venta mínima para cubrir gastos (piso de venta) · clic para ver el detalle</div></div>
+      <div class="pe-toggle">
+        <button class="pe-tg active" data-pemode="anual" onclick="setPEMode('anual')">Anual</button>
+        <button class="pe-tg" data-pemode="mensual" onclick="setPEMode('mensual')">Mensual</button>
+      </div>
+    </div>
+    <div id="content-pe" class="pe-body clickable" onclick="openPEDetail()"><div class="sk" style="height:200px;border-radius:8px"></div></div>
   </div>
 
   <div class="full card">
@@ -829,6 +875,7 @@ function renderAll(){
   renderKPIs();
   renderA();
   renderB();
+  renderPE();
   renderC();
   renderD();
   renderE();
@@ -1135,6 +1182,141 @@ function renderB(){
       </tbody>
     </table></div>`;
 }
+
+/* ══ PUNTO DE EQUILIBRIO POR DEPARTAMENTO ══ */
+// Datos fijos del Escenario 2. Mapeo: 'Social Media' (Excel) = 'Digital' (tablero).
+const PE_GLOBAL = { costosFijos:10200, presupuestoGastos:13250, egresosFijos:23450, margenMeta:0.30 };
+const PE_CONFIG = {
+  'Producción':  { costoFijo:1800, gastoAsignado:2650, pctGasto:0.20, piso:25000 },
+  'Digital':     { costoFijo:2950, gastoAsignado:2650, pctGasto:0.20, piso:6200 },
+  'Marketing':   { costoFijo:2350, gastoAsignado:2650, pctGasto:0.20, piso:5300 },
+  'Diseño':      { costoFijo:1800, gastoAsignado:2650, pctGasto:0.20, piso:4500 },
+  'Audiovisual': { costoFijo:1300, gastoAsignado:2650, pctGasto:0.20, piso:4500 }
+};
+const PE_ORDER = ['Producción','Digital','Marketing','Diseño','Audiovisual'];
+let PE_MODE = 'anual';
+
+// Ingreso Neto (Monto PPTO Aprobado, sin pausados, sin diferencial) por depto
+function peIngresoNeto(depto, mode){
+  const pausados = new Set(RAW.filter(r=>r.est_ppto==='Pausado').map(r=>(r.id||'').trim()).filter(Boolean));
+  const base = RAW.filter(r=> r.depto===depto && r.est_ppto==='Aprobado' && !pausados.has((r.id||'').trim()));
+  const anual = base.reduce((a,r)=>a+r.monto_ppto,0);
+  if(mode==='anual') return { valor:anual, etiqueta:'del año' };
+  const vSel = document.getElementById('f-sol').value;
+  if(vSel){ return { valor: base.filter(r=>normMes(r.mes_sol)===vSel).reduce((a,r)=>a+r.monto_ppto,0), etiqueta:vSel }; }
+  return { valor: anual/12, etiqueta:'prom. mensual' };
+}
+function peTarget(depto, mode){ const c=PE_CONFIG[depto]; return mode==='anual'? c.piso*12 : c.piso; }
+function peColor(pct){ return pct>=100?'#22C55E': pct>=75?'#F59E0B':'#DC2626'; }
+function peEstado(pct){ return pct>=100?'Cubre': pct>=75?'Cerca':'Debajo'; }
+
+function renderPE(){
+  const el=document.getElementById('content-pe'); if(!el) return;
+  const mode=PE_MODE;
+  const rows = PE_ORDER.filter(d=>PE_CONFIG[d]).map(d=>{
+    const ing = peIngresoNeto(d, mode);
+    const target = peTarget(d, mode);
+    const pct = target>0 ? ing.valor/target*100 : 0;
+    return { d, ing:ing.valor, target, pct };
+  });
+  const barsHtml = rows.map(r=>{
+    const scale = Math.max(r.ing, r.target)*1.15 || 1;
+    const fillW = Math.min(r.ing/scale*100, 100);
+    const markL = Math.min(r.target/scale*100, 100);
+    const col = peColor(r.pct);
+    return `<div class="pe-row">
+      <div class="pe-name"><span class="dot" style="background:${deptoColor(r.d)}"></span>${r.d}</div>
+      <div class="pe-track">
+        <div class="pe-fill" style="width:${fillW}%;background:${col}"></div>
+        <div class="pe-marker" style="left:${markL}%" title="Piso: ${fmt(r.target)}"></div>
+      </div>
+      <div class="pe-val">${fmt(r.ing)}<span class="pe-goal"> / ${fmt(r.target)}</span></div>
+      <div class="pe-pct" style="color:${col}">${r.pct.toFixed(0)}%</div>
+    </div>`;
+  }).join('');
+  const totIng = rows.reduce((a,r)=>a+r.ing,0);
+  const totTarget = rows.reduce((a,r)=>a+r.target,0);
+  const totPct = totTarget>0? totIng/totTarget*100 : 0;
+  const vSel = document.getElementById('f-sol').value;
+  const lblMode = mode==='anual'?'Anual · piso × 12': (vSel? 'Mensual · '+vSel : 'Mensual · promedio');
+  el.innerHTML = `
+    <div class="pe-summary">
+      <div class="pe-sm"><span class="pe-sm-lbl">Ingreso Neto ${mode==='anual'?'del año':'del período'}</span><span class="pe-sm-val" style="color:var(--teal)">${fmt(totIng)}</span></div>
+      <div class="pe-sm"><span class="pe-sm-lbl">Meta total (piso)</span><span class="pe-sm-val">${fmt(totTarget)}</span></div>
+      <div class="pe-sm"><span class="pe-sm-lbl">Cumplimiento</span><span class="pe-sm-val" style="color:${peColor(totPct)}">${totPct.toFixed(0)}%</span></div>
+      <div class="pe-mode-tag">${lblMode}</div>
+    </div>
+    <div class="pe-rows">${barsHtml}</div>
+    <div class="pe-legend"><span><i style="background:#22C55E"></i>Cubre (≥100%)</span><span><i style="background:#F59E0B"></i>Cerca (75–99%)</span><span><i style="background:#DC2626"></i>Debajo (&lt;75%)</span><span class="pe-legend-mark"><i class="mk"></i>Piso de venta</span><span class="pe-hint">Clic para ver el detalle →</span></div>`;
+}
+
+function setPEMode(mode){
+  if(PE_MODE===mode) return;
+  PE_MODE=mode;
+  document.querySelectorAll('.pe-tg').forEach(b=>b.classList.toggle('active', b.dataset.pemode===mode));
+  renderPE();
+}
+
+function openPEDetail(){
+  const g=PE_GLOBAL;
+  const bodyRows = PE_ORDER.filter(d=>PE_CONFIG[d]).map(d=>{
+    const c=PE_CONFIG[d];
+    const gastos=c.costoFijo+c.gastoAsignado;
+    const ingMes=peIngresoNeto(d,'mensual').valor, ingAnio=peIngresoNeto(d,'anual').valor;
+    const pctMes=c.piso>0?ingMes/c.piso*100:0, pctAnio=(c.piso*12)>0?ingAnio/(c.piso*12)*100:0;
+    return {d,c,gastos,ingMes,ingAnio,pctMes,pctAnio};
+  });
+  const tot={cf:0,ga:0,gastos:0,piso:0,pisoA:0,ingMes:0,ingAnio:0};
+  bodyRows.forEach(r=>{tot.cf+=r.c.costoFijo;tot.ga+=r.c.gastoAsignado;tot.gastos+=r.gastos;tot.piso+=r.c.piso;tot.pisoA+=r.c.piso*12;tot.ingMes+=r.ingMes;tot.ingAnio+=r.ingAnio;});
+  const totPctMes=tot.piso>0?tot.ingMes/tot.piso*100:0, totPctAnio=tot.pisoA>0?tot.ingAnio/tot.pisoA*100:0;
+  const vSel=document.getElementById('f-sol').value;
+  const mesLbl=vSel||'prom. mensual';
+  const pill=(pct)=>`<span class="pe-badge" style="background:${peColor(pct)}1a;color:${peColor(pct)}">${pct.toFixed(0)}% · ${peEstado(pct)}</span>`;
+  document.getElementById('pe-modal-body').innerHTML=`
+    <div class="pe-assump">
+      <div class="pe-ac"><div class="pe-ac-l">Costos fijos mensuales</div><div class="pe-ac-v">${fmt(g.costosFijos)}</div></div>
+      <div class="pe-ac"><div class="pe-ac-l">Presupuesto mensual de Gastos</div><div class="pe-ac-v">${fmt(g.presupuestoGastos)}</div></div>
+      <div class="pe-ac"><div class="pe-ac-l">Egresos mensuales fijos</div><div class="pe-ac-v">${fmt(g.egresosFijos)}</div></div>
+      <div class="pe-ac"><div class="pe-ac-l">% Margen meta s/PE</div><div class="pe-ac-v">${(g.margenMeta*100).toFixed(1)}%</div></div>
+    </div>
+    <div class="tbl-wrap"><table class="pe-table">
+      <thead><tr>
+        <th>Departamento</th><th class="r">Costo Fijo</th><th class="r">Gasto Asig.</th><th class="r">Gastos/mes</th>
+        <th class="r">Piso/mes</th><th class="r">Ing. Neto (${mesLbl})</th><th class="c">% Mensual</th>
+        <th class="r">Piso/año</th><th class="r">Ing. Neto año</th><th class="c">% Anual</th>
+      </tr></thead>
+      <tbody>
+        ${bodyRows.map(r=>`<tr>
+          <td style="font-weight:500"><span class="dot" style="background:${deptoColor(r.d)}"></span>${r.d}</td>
+          <td class="r">${fmt(r.c.costoFijo)}</td>
+          <td class="r">${fmt(r.c.gastoAsignado)}</td>
+          <td class="r">${fmt(r.gastos)}</td>
+          <td class="r" style="font-weight:600">${fmt(r.c.piso)}</td>
+          <td class="r" style="color:var(--teal)">${fmt(r.ingMes)}</td>
+          <td class="c">${pill(r.pctMes)}</td>
+          <td class="r" style="font-weight:600">${fmt(r.c.piso*12)}</td>
+          <td class="r" style="color:var(--teal)">${fmt(r.ingAnio)}</td>
+          <td class="c">${pill(r.pctAnio)}</td>
+        </tr>`).join('')}
+      </tbody>
+      <tfoot><tr class="tbl-total">
+        <td><b>Total</b></td>
+        <td class="r">${fmt(tot.cf)}</td>
+        <td class="r">${fmt(tot.ga)}</td>
+        <td class="r">${fmt(tot.gastos)}</td>
+        <td class="r">${fmt(tot.piso)}</td>
+        <td class="r">${fmt(tot.ingMes)}</td>
+        <td class="c">${pill(totPctMes)}</td>
+        <td class="r">${fmt(tot.pisoA)}</td>
+        <td class="r">${fmt(tot.ingAnio)}</td>
+        <td class="c">${pill(totPctAnio)}</td>
+      </tr></tfoot>
+    </table></div>
+    <div class="pe-note">Punto de equilibrio = piso de venta mensual (venta mínima para cubrir Costo Fijo + Gasto Asignado). Anual = piso × 12. Ingreso Neto = Monto PPTO aprobado (sin diferencial cambiario ni pausados).</div>`;
+  document.getElementById('pe-modal-ov').classList.add('on');
+  document.body.style.overflow='hidden';
+}
+function closePEDetail(){ document.getElementById('pe-modal-ov').classList.remove('on'); document.body.style.overflow=''; }
 
 /* ══ C: COBRANZA POR ANTIGÜEDAD ══ */
 function renderC(){
@@ -2375,6 +2557,20 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeDetail(); cl
       </table></div>
     </div>
     <div class="modal-foot" id="modal-foot"></div>
+  </div>
+</div>
+
+<!-- DETALLE PUNTO DE EQUILIBRIO -->
+<div class="modal-ov" id="pe-modal-ov" onclick="if(event.target===this)closePEDetail()">
+  <div class="modal" style="max-width:1040px">
+    <div class="modal-hdr">
+      <div>
+        <div class="modal-title">Punto de Equilibrio · Detalle por Departamento</div>
+        <div class="modal-sub">Escenario 2 · venta mínima mensual y anual para cubrir gastos (Costo Fijo + Gasto Asignado)</div>
+      </div>
+      <button class="modal-close" onclick="closePEDetail()" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="modal-body" id="pe-modal-body"></div>
   </div>
 </div>
 
