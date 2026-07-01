@@ -876,10 +876,11 @@ function renderKPIs(){
   const nCobrado     = new Set(cobrado_rows.map(r=>(r.id||'').trim()).filter(id=>id!=='')).size;
 
   // ── POR COBRAR ───────────────────────────────────────
-  // Suma del saldo pendiente POR PROYECTO (solo positivos) — así un proyecto
-  // sobre-cobrado (por el diferencial cambiario) no borra lo que otros deben.
-  const porcobrar_rows = aprPeriodo.filter(r => r.monto_cob < r.monto_ppto);
-  const porCobrar  = porcobrar_rows.reduce((a,r) => a + (r.monto_ppto - r.monto_cob), 0);
+  // Saldo pendiente por línea (solo positivos). El costo de cada línea es
+  // Monto PPTO + Diferencial Cambiario (igual que Ventas), así el saldo cuadra
+  // con Ventas − Cobrado.
+  const porcobrar_rows = aprPeriodo.filter(r => r.monto_cob < (r.monto_ppto + (r.dif_camb||0)));
+  const porCobrar  = porcobrar_rows.reduce((a,r) => a + ((r.monto_ppto + (r.dif_camb||0)) - r.monto_cob), 0);
   const nPorCobrar = new Set(porcobrar_rows.map(r=>(r.id||'').trim()).filter(id=>id!=='')).size;
 
   // ── POR FACTURAR ─────────────────────────────────────
@@ -1000,8 +1001,8 @@ function renderA(){
     const cob_rows = dr.filter(r => r.est_ppto === 'Aprobado' && r.monto_cob > 0);
     const cobrado  = cob_rows.reduce((a,r) => a + r.monto_cob, 0);
 
-    // Por Cobrar: suma del saldo pendiente por proyecto (solo positivos)
-    const porCobrar = apr_rows.filter(r => r.monto_cob < r.monto_ppto).reduce((a,r) => a + (r.monto_ppto - r.monto_cob), 0);
+    // Por Cobrar: saldo pendiente por línea (solo positivos), costo = PPTO + Diferencial
+    const porCobrar = apr_rows.filter(r => r.monto_cob < (r.monto_ppto + (r.dif_camb||0))).reduce((a,r) => a + ((r.monto_ppto + (r.dif_camb||0)) - r.monto_cob), 0);
 
     // Por Facturar: Enviado - Pendiente A. C.
     const fact_rows_d = dr.filter(r => r.est_ppto === 'Enviado - Pendiente A. C.');
@@ -1979,7 +1980,7 @@ function leadQualifies(id, lw){
 const KPI_DETAIL = {
   ventas:      {title:'Ventas - Facturado',    sub:'Proyectos con presupuesto Aprobado (sin pausados)',  filter:r=>r.est_ppto==='Aprobado'&&inPeriodo(r.mes_sol)&&!RAW.some(x=>x.est_ppto==='Pausado'&&(x.id||'').trim()===(r.id||'').trim())},
   cobrado:     {title:'Cobrado',               sub:'Aprobados con monto cobrado',                        filter:r=>r.est_ppto==='Aprobado'&&r.monto_cob>0&&inSol(r.mes_sol)},
-  porcobrar:   {title:'Por Cobrar',            sub:'Aprobados con saldo pendiente de cobro',             filter:r=>r.est_ppto==='Aprobado'&&inPeriodo(r.mes_sol)&&r.monto_cob<r.monto_ppto},
+  porcobrar:   {title:'Por Cobrar',            sub:'Aprobados con saldo pendiente de cobro',             filter:r=>r.est_ppto==='Aprobado'&&inPeriodo(r.mes_sol)&&r.monto_cob<(r.monto_ppto+(r.dif_camb||0))},
   porfacturar: {title:'Proyectos Pendientes por Aprobación', sub:'Enviado al cliente · Pendiente A. C.',                          filter:r=>r.est_ppto==='Enviado - Pendiente A. C.'&&inPeriodo(r.mes_sol)},
   cotizacion:  {title:'En Cotización',         sub:'Por Elaboración + En Revisión Interna + Proceso de Licitación', filter:r=>['Por Elaboración','En Revisión Interna','Proceso de Licitación'].includes(r.est_ppto)&&inPeriodo(r.mes_sol)},
   rechazados:  {title:'Proyectos Rechazados',  sub:'Presupuestos rechazados',                            filter:r=>r.est_ppto==='Rechazado'&&inPeriodo(r.mes_sol)},
