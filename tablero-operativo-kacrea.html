@@ -71,7 +71,7 @@ select:disabled{opacity:0.4;cursor:not-allowed}
 .kpi.c-red::before{background:linear-gradient(90deg,var(--red),#F87171)}
 .kpi.c-purple::before{background:linear-gradient(90deg,var(--purple),#A78BFA)}
 .kpi.c-slate::before{background:linear-gradient(90deg,#475569,#94A3B8)}
-.kpi-ico{position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center}
+.kpi-ico{position:absolute;top:14px;right:14px;width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center}
 .kpi-ico svg{width:14px;height:14px;fill:none;stroke-width:2}
 .kpi.c-teal .kpi-ico{background:var(--teal-dim)} .kpi.c-teal .kpi-ico svg{stroke:var(--teal)}
 .kpi.c-blue .kpi-ico{background:var(--blue-dim)} .kpi.c-blue .kpi-ico svg{stroke:var(--blue)}
@@ -80,7 +80,7 @@ select:disabled{opacity:0.4;cursor:not-allowed}
 .kpi.c-red .kpi-ico{background:var(--red-dim)} .kpi.c-red .kpi-ico svg{stroke:var(--red)}
 .kpi.c-purple .kpi-ico{background:var(--purple-dim)} .kpi.c-purple .kpi-ico svg{stroke:var(--purple)}
 .kpi.c-slate .kpi-ico{background:var(--surface2)} .kpi.c-slate .kpi-ico svg{stroke:var(--muted)}
-.kpi-lbl{font-size:9px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+.kpi-lbl{font-size:8px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;padding-right:32px;min-height:22px;overflow-wrap:anywhere}
 .kpi-val{font-size:20px;font-weight:700;letter-spacing:-.5px;font-family:'DM Mono',monospace;margin-bottom:4px;padding-right:36px}
 .kpi.c-teal .kpi-val{color:var(--teal)}
 .kpi.c-blue .kpi-val{color:var(--blue)}
@@ -292,7 +292,7 @@ tbody tr:hover td{background:var(--surface2)}
   .kpi-grid{grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
   .kpi{padding:12px 10px 10px;overflow:hidden}
   .kpi-val{font-size:16px;padding-right:28px}
-  .kpi-lbl{font-size:8px}
+  .kpi-lbl{font-size:8px;padding-right:30px;min-height:20px}
   .kpi-sub{font-size:9px}
   .kpi-ico{width:26px;height:26px;top:10px;right:10px}
   .kpi-ico svg{width:12px;height:12px}
@@ -975,7 +975,7 @@ function renderKPIs(){
     </div>
     <div class="kpi c-slate clickable" onclick="openDetail('pausados')">
       <div class="kpi-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg></div>
-      <div class="kpi-lbl">Presupuestos Pausados</div>
+      <div class="kpi-lbl">Proyectos Pausados</div>
       <div class="kpi-val">${fmt(montoPaus)}</div>
       <div class="kpi-sub"><b>${nPaus}</b> proyectos · atípicos</div>
     </div>`;
@@ -2014,7 +2014,7 @@ const KPI_DETAIL = {
   rechazados:  {title:'Proyectos Rechazados',  sub:'Presupuestos rechazados',                            filter:r=>r.est_ppto==='Rechazado'&&inPeriodo(r.mes_sol)},
   tasa:        {title:'Tasa de Cierre',        sub:'Aprobados + Rechazados (base del cálculo)',          filter:r=>['Aprobado','Rechazado'].includes(r.est_ppto)&&inPeriodo(r.mes_sol)},
   newleads:    {title:'New Leads - Requirements', sub:'Proyectos nuevos (excluye renovaciones, salvo Por Elaboración) · lunes: semana anterior', weekly:true, dedupe:true, filter:r=>{const lw=leadsWindow(); return r.fecha_sol&&r.fecha_sol>=lw.start&&r.fecha_sol<=lw.end&&leadQualifies(r.id,lw);}},
-  pausados:    {title:'Presupuestos Pausados',  sub:'Estatus de PPTO: Pausado (atípicos)', layout:'pausado', filter:r=>r.est_ppto==='Pausado'&&inPeriodo(r.mes_sol)},
+  pausados:    {title:'Proyectos Pausados',  sub:'Estatus de PPTO: Pausado (atípicos)', layout:'pausado', filter:r=>r.est_ppto==='Pausado'&&inPeriodo(r.mes_sol)},
   // ── Operación · por Estatus del Proyecto (cualquier PPTO + Período + filtros Depto/Resp) ──
   proy_encurso:    {title:'Proyectos en Curso',     sub:'Estatus del Proyecto: En Curso',    pField:'responsable', filter:r=>r.est_proy==='En Curso'   &&inPeriodo(r.mes_sol)&&opMatchRow(r)},
   proy_pendiente:  {title:'Proyectos Pendientes',   sub:'Estatus del Proyecto: Pendiente',   pField:'responsable', filter:r=>r.est_proy==='Pendiente'  &&inPeriodo(r.mes_sol)&&opMatchRow(r)},
