@@ -810,6 +810,17 @@ async function loadData(){
         fecha_ent:   parseDate(get(c.fecha_ent)),
       };
     });
+    // Normalización puntual: 2 proyectos solicitados en 2025 pero cerrados en
+    // enero 2026 (cobranzas rezagadas). Se reasignan a Enero 2026 para que
+    // cuenten en el año contable 2026 (KAC-260001: su diferencial cambiario;
+    // KAC-260002: su Monto PPTO). No cambia ninguna lógica de filtros.
+    const REASIGNAR_ENERO = ['KAC-260001','KAC-260002'];
+    RAW.forEach(r=>{
+      if(REASIGNAR_ENERO.includes((r.id||'').trim())){
+        r.mes_sol   = 'Enero';
+        r.fecha_sol = new Date(2026,0,15);
+      }
+    });
     document.getElementById('upd-time').textContent='Actualizado '+new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
     poblarFiltros();
     renderAll();
@@ -1204,13 +1215,8 @@ let PE_MODE = 'anual_fecha';  // 'mensual' | 'anual_fecha' | 'anual_12'
 
 // Clave año-mes de una fecha (para comparar por fecha real, no por nombre de mes)
 function peYM(d){ return (d instanceof Date && !isNaN(d)) ? d.getFullYear()*12 + d.getMonth() : null; }
-// Meses transcurridos = meses de calendario operados (de la 1ª a la última venta
-// aprobada, inclusive). Ej. Nov 2025 → Jun 2026 = 8. Tope 12.
-function peMesesTranscurridos(){
-  const ks = RAW.filter(r=>r.est_ppto==='Aprobado').map(r=>peYM(r.fecha_sol)).filter(k=>k!==null);
-  if(!ks.length) return 12;
-  return Math.min(Math.max(...ks) - Math.min(...ks) + 1, 12);
-}
+// Meses transcurridos = mes del calendario en curso del año contable (ej. Julio → 7).
+function peMesesTranscurridos(){ return Math.min(new Date().getMonth()+1, 12); }
 // Ingreso Neto (Monto PPTO Aprobado, sin pausados, sin diferencial) por depto
 function peIngresoNeto(depto, mode){
   const pausados = new Set(RAW.filter(r=>r.est_ppto==='Pausado').map(r=>(r.id||'').trim()).filter(Boolean));
@@ -1273,7 +1279,7 @@ function renderPE(){
   const esAnual = mode!=='mensual';
   const meses = peMesesTranscurridos();
   const lblMode = mode==='anual_12' ? 'Anual · piso × 12 meses'
-    : mode==='anual_fecha' ? `Anual · a la fecha (${meses} ${meses===1?'mes':'meses'} operados · piso × ${meses})`
+    : mode==='anual_fecha' ? `Anual · a la fecha (${meses} ${meses===1?'mes':'meses'} · piso × ${meses})`
     : (vSel? 'Mensual · '+vSel : 'Mensual · promedio');
   const metaLbl = mode==='anual_fecha' ? 'Meta a la fecha (piso)' : 'Meta total (piso)';
   el.innerHTML = `
