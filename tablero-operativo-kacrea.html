@@ -1202,8 +1202,15 @@ const PE_CONFIG = {
 const PE_ORDER = ['Producción','Digital','Marketing','Diseño','Audiovisual'];
 let PE_MODE = 'anual_fecha';  // 'mensual' | 'anual_fecha' | 'anual_12'
 
-// Mes en curso = mes del calendario actual (ej. Julio → 7). Tope 12.
-function peMesesTranscurridos(){ return Math.min(new Date().getMonth()+1, 12); }
+// Clave año-mes de una fecha (para comparar por fecha real, no por nombre de mes)
+function peYM(d){ return (d instanceof Date && !isNaN(d)) ? d.getFullYear()*12 + d.getMonth() : null; }
+// Meses transcurridos = meses de calendario operados (de la 1ª a la última venta
+// aprobada, inclusive). Ej. Nov 2025 → Jun 2026 = 8. Tope 12.
+function peMesesTranscurridos(){
+  const ks = RAW.filter(r=>r.est_ppto==='Aprobado').map(r=>peYM(r.fecha_sol)).filter(k=>k!==null);
+  if(!ks.length) return 12;
+  return Math.min(Math.max(...ks) - Math.min(...ks) + 1, 12);
+}
 // Ingreso Neto (Monto PPTO Aprobado, sin pausados, sin diferencial) por depto
 function peIngresoNeto(depto, mode){
   const pausados = new Set(RAW.filter(r=>r.est_ppto==='Pausado').map(r=>(r.id||'').trim()).filter(Boolean));
@@ -1211,10 +1218,11 @@ function peIngresoNeto(depto, mode){
   const anual = base.reduce((a,r)=>a+r.monto_ppto,0);
   // Anual · 12 meses: todo el año
   if(mode==='anual_12') return { valor:anual, etiqueta:'del año' };
-  // Anual · a la fecha: solo ventas hasta el mes en curso (ej. ene–jul)
+  // Anual · a la fecha: ventas cuya fecha ya ocurrió (<= mes actual). Todo lo
+  // histórico cuenta; si una fila no tuviera fecha, se incluye por defecto.
   if(mode==='anual_fecha'){
-    const mc = peMesesTranscurridos();
-    const v = base.filter(r=>{ const i=mesIdx(normMes(r.mes_sol)); return i>=0 && i<mc; })
+    const kMax = new Date().getFullYear()*12 + new Date().getMonth();
+    const v = base.filter(r=>{ const k=peYM(r.fecha_sol); return k===null || k<=kMax; })
                   .reduce((a,r)=>a+r.monto_ppto,0);
     return { valor:v, etiqueta:'a la fecha' };
   }
@@ -1265,7 +1273,7 @@ function renderPE(){
   const esAnual = mode!=='mensual';
   const meses = peMesesTranscurridos();
   const lblMode = mode==='anual_12' ? 'Anual · piso × 12 meses'
-    : mode==='anual_fecha' ? `Anual · a la fecha · hasta ${MESES[meses-1]} (${meses} ${meses===1?'mes':'meses'} · piso × ${meses})`
+    : mode==='anual_fecha' ? `Anual · a la fecha (${meses} ${meses===1?'mes':'meses'} operados · piso × ${meses})`
     : (vSel? 'Mensual · '+vSel : 'Mensual · promedio');
   const metaLbl = mode==='anual_fecha' ? 'Meta a la fecha (piso)' : 'Meta total (piso)';
   el.innerHTML = `
@@ -1291,7 +1299,7 @@ function openPEDetail(){
   const bodyRows = PE_ORDER.filter(d=>PE_CONFIG[d]).map(d=>{
     const c=PE_CONFIG[d];
     const gastos=c.costoFijo+c.gastoAsignado;
-    const ingMes=peIngresoNeto(d,'mensual').valor, ingAnio=peIngresoNeto(d,'anual').valor;
+    const ingMes=peIngresoNeto(d,'mensual').valor, ingAnio=peIngresoNeto(d,'anual_12').valor;
     const pctMes=c.piso>0?ingMes/c.piso*100:0, pctAnio=(c.piso*12)>0?ingAnio/(c.piso*12)*100:0;
     return {d,c,gastos,ingMes,ingAnio,pctMes,pctAnio};
   });
