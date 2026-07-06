@@ -252,6 +252,7 @@ tbody tr:hover td{background:var(--surface2)}
 .pe-ac-v{font-size:18px;font-weight:700;margin-top:5px;font-family:'DM Mono',monospace}
 .pe-table th.c,.pe-table td.c{text-align:center}
 .pe-badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;white-space:nowrap}
+.pe-mcpct{font-size:11px;font-weight:700;font-family:'DM Mono',monospace;color:var(--muted)}
 .pe-note{font-size:10.5px;color:var(--faint);margin-top:14px;line-height:1.5}
 @media(max-width:768px){.pe-row{grid-template-columns:88px 1fr 60px;gap:8px}.pe-val{display:none}.pe-assump{grid-template-columns:1fr 1fr}}
 
@@ -1204,11 +1205,11 @@ function renderB(){
 // Datos fijos del Escenario 2. Mapeo: 'Social Media' (Excel) = 'Digital' (tablero).
 const PE_GLOBAL = { costosFijos:10200, presupuestoGastos:13250, egresosFijos:23450, margenMeta:0.30 };
 const PE_CONFIG = {
-  'Producción':  { costoFijo:1800, gastoAsignado:2650, pctGasto:0.20, piso:25000 },
-  'Digital':     { costoFijo:2950, gastoAsignado:2650, pctGasto:0.20, piso:6200 },
-  'Marketing':   { costoFijo:2350, gastoAsignado:2650, pctGasto:0.20, piso:5300 },
-  'Diseño':      { costoFijo:1800, gastoAsignado:2650, pctGasto:0.20, piso:4500 },
-  'Audiovisual': { costoFijo:1300, gastoAsignado:2650, pctGasto:0.20, piso:4500 }
+  'Producción':  { costoFijo:1800, gastoAsignado:2650, pctGasto:0.20, piso:25000, ingProm:23551.73, cvProm:16183.14 },
+  'Digital':     { costoFijo:2950, gastoAsignado:2650, pctGasto:0.20, piso:6200,  ingProm:4190.00,  cvProm:379.39 },
+  'Marketing':   { costoFijo:2350, gastoAsignado:2650, pctGasto:0.20, piso:5300,  ingProm:2558.30,  cvProm:103.34 },
+  'Diseño':      { costoFijo:1800, gastoAsignado:2650, pctGasto:0.20, piso:4500,  ingProm:4428.29,  cvProm:27.91 },
+  'Audiovisual': { costoFijo:1300, gastoAsignado:2650, pctGasto:0.20, piso:4500,  ingProm:2844.20,  cvProm:340.87 }
 };
 const PE_ORDER = ['Producción','Digital','Marketing','Diseño','Audiovisual'];
 let PE_MODE = 'anual_fecha';  // 'mensual' | 'anual_fecha' | 'anual_12'
@@ -1305,13 +1306,16 @@ function openPEDetail(){
   const bodyRows = PE_ORDER.filter(d=>PE_CONFIG[d]).map(d=>{
     const c=PE_CONFIG[d];
     const gastos=c.costoFijo+c.gastoAsignado;
+    const ingProm=c.ingProm||0, cvProm=c.cvProm||0;
+    const mcProm=ingProm-cvProm, pctMc=ingProm>0?mcProm/ingProm*100:0;
     const ingMes=peIngresoNeto(d,'mensual').valor, ingAnio=peIngresoNeto(d,'anual_12').valor;
     const pctMes=c.piso>0?ingMes/c.piso*100:0, pctAnio=(c.piso*12)>0?ingAnio/(c.piso*12)*100:0;
-    return {d,c,gastos,ingMes,ingAnio,pctMes,pctAnio};
+    return {d,c,gastos,ingProm,cvProm,mcProm,pctMc,ingMes,ingAnio,pctMes,pctAnio};
   });
-  const tot={cf:0,ga:0,gastos:0,piso:0,pisoA:0,ingMes:0,ingAnio:0};
-  bodyRows.forEach(r=>{tot.cf+=r.c.costoFijo;tot.ga+=r.c.gastoAsignado;tot.gastos+=r.gastos;tot.piso+=r.c.piso;tot.pisoA+=r.c.piso*12;tot.ingMes+=r.ingMes;tot.ingAnio+=r.ingAnio;});
+  const tot={cf:0,ga:0,gastos:0,ingProm:0,cvProm:0,mcProm:0,piso:0,pisoA:0,ingMes:0,ingAnio:0};
+  bodyRows.forEach(r=>{tot.cf+=r.c.costoFijo;tot.ga+=r.c.gastoAsignado;tot.gastos+=r.gastos;tot.ingProm+=r.ingProm;tot.cvProm+=r.cvProm;tot.mcProm+=r.mcProm;tot.piso+=r.c.piso;tot.pisoA+=r.c.piso*12;tot.ingMes+=r.ingMes;tot.ingAnio+=r.ingAnio;});
   const totPctMes=tot.piso>0?tot.ingMes/tot.piso*100:0, totPctAnio=tot.pisoA>0?tot.ingAnio/tot.pisoA*100:0;
+  const totPctMc=tot.ingProm>0?tot.mcProm/tot.ingProm*100:0;
   const vSel=document.getElementById('f-sol').value;
   const mesLbl=vSel||'prom. mensual';
   const pill=(pct)=>`<span class="pe-badge" style="background:${peColor(pct)}1a;color:${peColor(pct)}">${pct.toFixed(0)}% · ${peEstado(pct)}</span>`;
@@ -1325,6 +1329,7 @@ function openPEDetail(){
     <div class="tbl-wrap"><table class="pe-table">
       <thead><tr>
         <th>Departamento</th><th class="r">Costo Fijo</th><th class="r">Gasto Asig.</th><th class="r">Gastos/mes</th>
+        <th class="r">Ingresos Prom.</th><th class="r">Costo Var. Prom.</th><th class="r">Mc Prom.</th><th class="c">% Mc</th>
         <th class="r">Piso/mes</th><th class="r">Ing. Neto (${mesLbl})</th><th class="c">% Mensual</th>
         <th class="r">Piso/año</th><th class="r">Ing. Neto año</th><th class="c">% Anual</th>
       </tr></thead>
@@ -1334,6 +1339,10 @@ function openPEDetail(){
           <td class="r">${fmt(r.c.costoFijo)}</td>
           <td class="r">${fmt(r.c.gastoAsignado)}</td>
           <td class="r">${fmt(r.gastos)}</td>
+          <td class="r">${fmt(r.ingProm)}</td>
+          <td class="r">${fmt(r.cvProm)}</td>
+          <td class="r" style="font-weight:600">${fmt(r.mcProm)}</td>
+          <td class="c"><span class="pe-mcpct">${r.pctMc.toFixed(0)}%</span></td>
           <td class="r" style="font-weight:600">${fmt(r.c.piso)}</td>
           <td class="r" style="color:var(--teal)">${fmt(r.ingMes)}</td>
           <td class="c">${pill(r.pctMes)}</td>
@@ -1346,6 +1355,10 @@ function openPEDetail(){
           <td class="r">${fmt(tot.cf)}</td>
           <td class="r">${fmt(tot.ga)}</td>
           <td class="r">${fmt(tot.gastos)}</td>
+          <td class="r">${fmt(tot.ingProm)}</td>
+          <td class="r">${fmt(tot.cvProm)}</td>
+          <td class="r">${fmt(tot.mcProm)}</td>
+          <td class="c"><span class="pe-mcpct">${totPctMc.toFixed(0)}%</span></td>
           <td class="r">${fmt(tot.piso)}</td>
           <td class="r">${fmt(tot.ingMes)}</td>
           <td class="c">${pill(totPctMes)}</td>
@@ -1355,7 +1368,7 @@ function openPEDetail(){
         </tr>
       </tbody>
     </table></div>
-    <div class="pe-note">Punto de equilibrio = piso de venta mensual (venta mínima para cubrir Costo Fijo + Gasto Asignado). Anual = piso × 12. Ingreso Neto = Monto PPTO aprobado (sin diferencial cambiario ni pausados).</div>`;
+    <div class="pe-note">Ingresos / Costo Variable / Mc Promedio y % de Margen de Contribución provienen del Escenario 2. Mc Promedio = Ingresos Prom. − Costo Var. Prom.; % Mc = Mc ÷ Ingresos. Punto de equilibrio = piso de venta mensual (venta mínima para cubrir Costo Fijo + Gasto Asignado); anual = piso × 12. Ingreso Neto = Monto PPTO aprobado (sin diferencial cambiario ni pausados).</div>`;
   document.getElementById('pe-modal-ov').classList.add('on');
   document.body.style.overflow='hidden';
 }

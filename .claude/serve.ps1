@@ -1,6 +1,7 @@
 $ErrorActionPreference = 'Stop'
 $root = 'C:\Users\Usuario19\tablero-kacrea'
-$prefix = 'http://localhost:8765/'
+$port = if ($env:PORT) { $env:PORT } else { '8790' }
+$prefix = "http://localhost:$port/"
 $listener = New-Object System.Net.HttpListener
 $listener.Prefixes.Add($prefix)
 $listener.Start()
