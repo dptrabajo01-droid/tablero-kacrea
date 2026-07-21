@@ -1208,13 +1208,13 @@ function renderB(){
 
 /* ══ PUNTO DE EQUILIBRIO POR DEPARTAMENTO ══ */
 // Datos fijos del Escenario 2. Mapeo: 'Social Media' (Excel) = 'Digital' (tablero).
-const PE_GLOBAL = { costosFijos:10200, presupuestoGastos:13250, egresosFijos:23450, margenMeta:0.30 };
+const PE_GLOBAL = { costosFijos:9600, presupuestoGastos:13250, egresosFijos:22850, margenMeta:0.30 };
 const PE_CONFIG = {
-  'Producción':  { costoFijo:1800, gastoAsignado:2650, pctGasto:0.20, piso:25000, ingProm:23551.73, cvProm:16183.14 },
-  'Digital':     { costoFijo:2950, gastoAsignado:2650, pctGasto:0.20, piso:6200,  ingProm:4190.00,  cvProm:379.39 },
-  'Marketing':   { costoFijo:2350, gastoAsignado:2650, pctGasto:0.20, piso:5300,  ingProm:2558.30,  cvProm:103.34 },
-  'Diseño':      { costoFijo:1800, gastoAsignado:2650, pctGasto:0.20, piso:4500,  ingProm:4428.29,  cvProm:27.91 },
-  'Audiovisual': { costoFijo:1300, gastoAsignado:2650, pctGasto:0.20, piso:4500,  ingProm:2844.20,  cvProm:340.87 }
+  'Producción':  { costoFijo:1400, gastoAsignado:2650, pctGasto:0.20, piso:25000, ingProm:19915.97, cvProm:13780.64 },
+  'Digital':     { costoFijo:2700, gastoAsignado:2650, pctGasto:0.20, piso:6000,  ingProm:5025.00,  cvProm:442.08 },
+  'Marketing':   { costoFijo:3400, gastoAsignado:2650, pctGasto:0.20, piso:6500,  ingProm:3111.08,  cvProm:193.14 },
+  'Diseño':      { costoFijo:1400, gastoAsignado:2650, pctGasto:0.20, piso:4100,  ingProm:4181.08,  cvProm:25.75 },
+  'Audiovisual': { costoFijo:700,  gastoAsignado:2650, pctGasto:0.20, piso:4000,  ingProm:2628.50,  cvProm:405.31 }
 };
 const PE_ORDER = ['Producción','Digital','Marketing','Diseño','Audiovisual'];
 let PE_MODE = 'anual_fecha';  // 'mensual' | 'anual_fecha' | 'anual_12'
