@@ -541,7 +541,7 @@ tbody tr:hover td{background:var(--surface2)}
     <div class="tbl-wrap"><table><thead><tr><th>Vendedor</th><th class="r">Leads</th><th class="r">Aprobados</th><th class="r">Rechazados</th><th class="r">T. Cierre</th><th class="r">$ Aprobado</th></tr></thead><tbody id="tbody-m"></tbody></table></div>
   </div>
 
-  <div class="grid-2">
+  <div class="grid-3">
     <div class="card">
       <div class="card-hdr"><div><div class="card-title">Top 10 Marcas por Monto Aprobado</div><div class="card-sub">Clientes con mayor monto de presupuesto aprobado</div></div></div>
       <div id="content-j"><div class="sk" style="height:160px;border-radius:8px"></div></div>
@@ -549,6 +549,10 @@ tbody tr:hover td{background:var(--surface2)}
     <div class="card">
       <div class="card-hdr"><div><div class="card-title">Análisis de Rechazos por Servicio</div><div class="card-sub">Servicios con mayor pérdida</div></div></div>
       <div class="tbl-wrap"><table><thead><tr><th>Servicio</th><th class="r"># Rechazos</th><th class="r">$ Perdido</th><th class="r">Ticket Prom.</th></tr></thead><tbody id="tbody-k"></tbody></table></div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><div><div class="card-title">Top 10 Servicios Más Vendidos</div><div class="card-sub">Servicios con mayor número de proyectos aprobados</div></div></div>
+      <div class="tbl-wrap"><table><thead><tr><th>Servicio</th><th class="r"># Ventas</th><th class="r">$ Vendido</th><th class="r">Ticket Prom.</th></tr></thead><tbody id="tbody-n"></tbody></table></div>
     </div>
   </div>
 
@@ -902,6 +906,7 @@ function renderAll(){
   renderK();
   renderL();
   renderM();
+  renderN();
   renderOperacion();
 }
 
@@ -2157,6 +2162,44 @@ function renderK(){
       <td class="r">—</td>
     </tr>`
     : `<tr><td colspan="4" class="empty">Sin rechazos</td></tr>`;
+}
+
+/* ══ N: TOP 10 SERVICIOS MÁS VENDIDOS ══ */
+function renderN(){
+  const apr = RAW.filter(r => r.est_ppto === 'Aprobado' && inPeriodo(r.mes_sol));
+  const bySvc = new Map();
+  apr.forEach(r => {
+    const s = r.svc_own || 'Sin servicio';
+    if(!bySvc.has(s)) bySvc.set(s, {ids: new Set(), monto: 0});
+    const d = bySvc.get(s);
+    if(r.id) d.ids.add(r.id);
+    d.monto += r.monto_ppto;
+  });
+
+  // Top 10 ordenado por # ventas
+  const sorted = [...bySvc.entries()]
+    .map(([s,d]) => ({s, n: d.ids.size, monto: d.monto}))
+    .sort((a,b) => b.n - a.n)
+    .slice(0, 10);
+
+  const totalN     = sorted.reduce((a,r) => a + r.n,     0);
+  const totalMonto = sorted.reduce((a,r) => a + r.monto, 0);
+
+  document.getElementById('tbody-n').innerHTML = sorted.length
+    ? sorted.map((r,i) => `
+    <tr>
+      <td><span class="pill pill-gray" style="margin-right:6px">${i+1}</span>${r.s}</td>
+      <td class="r"><span class="pill pill-green">${r.n}</span></td>
+      <td class="r" style="color:var(--green)">${fmt(r.monto)}</td>
+      <td class="r muted">${fmt(r.n ? r.monto/r.n : 0)}</td>
+    </tr>`).join('') + `
+    <tr class="tbl-total">
+      <td><b>Total</b></td>
+      <td class="r"><b>${totalN}</b></td>
+      <td class="r" style="color:var(--green)"><b>${fmt(totalMonto)}</b></td>
+      <td class="r">—</td>
+    </tr>`
+    : `<tr><td colspan="4" class="empty">Sin ventas</td></tr>`;
 }
 
 /* ══ L: PRICING COMPARATIVO POR SERVICIO ══ */
