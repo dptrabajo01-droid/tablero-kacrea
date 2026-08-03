@@ -736,6 +736,7 @@ function detectCols(headers){
     fecha_ar:    f(['fecha de a/r','fecha a/r']),
     monto_ppto:  f(['monto ppto','monto de ppto','monto de presupuesto']),
     dif_camb:    f(['diferencial']),
+    est_fact:    f(['estatus de facturación','estatus de facturacion','estatus facturación']),
     fecha_fact:  f(['fecha de facturación','fecha facturación','fecha de facturacion']),
     nro_fact:    f(['nro. de factura','nro de factura','numero de factura']),
     monto_cob:   f(['monto cobrado']),
@@ -799,6 +800,7 @@ async function loadData(){
         fecha_ar:    parseDate(get(c.fecha_ar)),
         monto_ppto:  parseMonto(c.monto_ppto>=0?v[c.monto_ppto]:0),
         dif_camb:    parseMonto(c.dif_camb>=0?v[c.dif_camb]:0),
+        est_fact:    get(c.est_fact),
         fecha_fact:  parseDate(get(c.fecha_fact)),
         nro_fact:    get(c.nro_fact),
         monto_cob:   parseMonto(c.monto_cob>=0?v[c.monto_cob]:0),
@@ -2346,6 +2348,8 @@ function openDetail(key){
   MODAL_ISOP=MODAL_PFIELD==='responsable';
   MODAL_LAYOUT=cfg.layout||(MODAL_ISOP?'op':'base');
   document.getElementById('modal-f-ppto').style.display=MODAL_ISOP?'none':'';
+  document.getElementById('modal-f-fact').style.display=key==='porcobrar'?'':'none';
+  document.getElementById('modal-f-fact').value='';
   document.getElementById('modal-thead').innerHTML=
     MODAL_LAYOUT==='op'      ? '<th>Fecha Solicitud</th><th>Cliente</th><th>Proyecto</th><th>Servicio</th><th>Departamento</th><th>Responsable</th><th class="r">F. Inicio</th><th class="r">F. Revisión</th><th class="r">F. Entrega</th><th class="r">F. Límite</th>'
     : MODAL_LAYOUT==='pausado'? '<th>Cliente</th><th>Proyecto</th><th>Servicio</th><th>Estatus PPTO</th><th>Nro. PPTO</th><th class="r">F. PPTO</th><th class="r">F. A/R PPTO</th><th>Estatus Proyecto</th><th>Departamento</th>'
@@ -2582,6 +2586,7 @@ function limpiarModalFiltros(){
   poblarModalPPTO();
   document.getElementById('modal-f-rc').value='';
   document.getElementById('modal-f-ppto').value='';
+  document.getElementById('modal-f-fact').value='';
   renderModalRows(MODAL_ROWS);
   updateModalClearVisibility();
 }
@@ -2592,7 +2597,8 @@ function updateModalClearVisibility(){
   const fd=document.getElementById('modal-f-depto').value;
   const fr=document.getElementById('modal-f-rc').value;
   const fp=document.getElementById('modal-f-ppto').value;
-  const b=document.getElementById('modal-clear'); if(b) b.style.display=(q||fd||fr||fp)?'inline-block':'none';
+  const ff=document.getElementById('modal-f-fact').value;
+  const b=document.getElementById('modal-clear'); if(b) b.style.display=(q||fd||fr||fp||ff)?'inline-block':'none';
 }
 
 function filterModal(){
@@ -2604,6 +2610,8 @@ function filterModal(){
   if(fr) f=f.filter(r=>r[MODAL_PFIELD]===fr);
   const fp=document.getElementById('modal-f-ppto').value;
   if(fp) f=f.filter(r=>r.resp_ppto===fp);
+  const ff=document.getElementById('modal-f-fact').value;
+  if(ff) f=f.filter(r=> ff==='__blank__' ? !r.est_fact : r.est_fact===ff);
   if(MODAL_DUE!=='todos'){ const dm=dueMap(MODAL_ROWS), want=MODAL_DUE==='vencidos'?'vencido':'porvencer'; f=f.filter(r=>dm.get(idKey(r))===want); }
   if(q)  f=f.filter(r=>[r.cliente,r.svc_own,r.canal_int,r.est_ppto].some(x=>(x||'').toLowerCase().includes(q)));
   renderModalRows(f);
@@ -2645,6 +2653,12 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeDetail(); cl
       <select id="modal-f-depto" onchange="onModalDeptoChange()"><option value="">Todos los departamentos</option></select>
       <select id="modal-f-rc" onchange="filterModal()"><option value="">Todos los responsables de cuentas</option></select>
       <select id="modal-f-ppto" onchange="filterModal()"><option value="">Todos los resp. de PPTO</option></select>
+      <select id="modal-f-fact" onchange="filterModal()" style="display:none">
+        <option value="">Todos los estatus de facturación</option>
+        <option value="Facturado">Facturado</option>
+        <option value="No Facturado">No Facturado</option>
+        <option value="__blank__">Sin estatus</option>
+      </select>
       <button class="btn-clear-f" id="modal-clear" onclick="limpiarModalFiltros()" style="display:none">✕ Limpiar filtros</button>
       <span class="modal-count" id="modal-count"></span>
     </div>
