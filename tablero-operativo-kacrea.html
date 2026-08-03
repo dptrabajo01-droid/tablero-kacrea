@@ -2305,6 +2305,7 @@ const KPI_DETAIL = {
 };
 
 let MODAL_ROWS = [];
+let MODAL_KEY = '';
 // Campo del 2º filtro del modal según la tarjeta: 'canal_int' (Responsable de Cuentas,
 // tarjetas de arriba) o 'responsable' (Responsable, tarjetas de Operación)
 let MODAL_PFIELD='canal_int', MODAL_PLABEL='Todos los responsables de cuentas';
@@ -2326,6 +2327,7 @@ function estPill(e){
 
 function openDetail(key){
   const cfg=KPI_DETAIL[key]; if(!cfg) return;
+  MODAL_KEY=key;
   // La agrupación por proyecto se hace en renderModalRows (una fila por ID,
   // con cascada para los que tienen varios registros)
   const rows=RAW.filter(cfg.filter);
@@ -2396,7 +2398,10 @@ function renderModalRows(rows){
     byId.get(id).rows.push(r);
   });
 
-  const total=rows.reduce((a,r)=>a+r.monto_ppto,0);
+  // Por Cobrar: el total relevante es el saldo pendiente, no el monto del PPTO
+  const total = MODAL_KEY==='porcobrar'
+    ? rows.reduce((a,r)=>a+((r.monto_ppto+(r.dif_camb||0))-r.monto_cob),0)
+    : rows.reduce((a,r)=>a+r.monto_ppto,0);
   const fDate=d=>d?d.toLocaleDateString('es-MX'):'—';
   const pick=(rs,f)=>{ const s=new Set(rs.map(x=>(x[f]||'').trim()).filter(Boolean)); return s.size===0?'—':s.size===1?[...s][0]:'Varios'; };
   const pickDateStr=(rs,f)=>{ const ts=[...new Set(rs.map(x=>x[f]?x[f].getTime():null).filter(v=>v!==null))]; if(!ts.length)return '—'; if(ts.length>1)return 'Varios'; return new Date(ts[0]).toLocaleDateString('es-MX'); };
@@ -2470,7 +2475,9 @@ function renderModalRows(rows){
       }
     } else {
       // ── Modal base (tarjetas de arriba): 9 columnas ──
-      const montoGrp=rs.reduce((a,r)=>a+r.monto_ppto,0);
+      // Por Cobrar muestra el saldo pendiente por fila, no el monto del PPTO
+      const montoOf = r => MODAL_KEY==='porcobrar' ? ((r.monto_ppto+(r.dif_camb||0))-r.monto_cob) : r.monto_ppto;
+      const montoGrp=rs.reduce((a,r)=>a+montoOf(r),0);
       const svc=pick(rs,'svc_own'), dep=pick(rs,'depto'), resp=pick(rs,'responsable'), est=pick(rs,'est_ppto');
       const estCls=est==='Varios'?'pill-gray':estPill(est);
       html+=`<tr class="grp-parent${multi?' has-children':''}"${multi?` onclick="toggleGroup('${key}')"`:''}>
@@ -2495,7 +2502,7 @@ function renderModalRows(rows){
             <td>${deptoPill(r.depto)}</td>
             <td class="muted">${r.responsable||'—'}</td>
             <td><span class="pill ${estPill(r.est_ppto)}">${r.est_ppto||'—'}</span></td>
-            <td class="r" style="color:var(--teal)">${fmt(r.monto_ppto)}</td>
+            <td class="r" style="color:var(--teal)">${fmt(montoOf(r))}</td>
           </tr>`;
         });
       }
