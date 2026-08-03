@@ -924,17 +924,22 @@ function renderKPIs(){
   // Monto: Aprobados filtrados por período de solicitud (sin pausados)
   const aprPeriodo = RAW.filter(r => r.est_ppto === 'Aprobado' && inPeriodo(r.mes_sol)
                                  && !pausadoIds.has((r.id||'').trim()));
+  // Ventas se filtra por Mes A/R de PPTO (mes en que se aprobó/rechazó el
+  // presupuesto), no por Mes de Solicitud — así una venta cuenta en el mes
+  // en que realmente se aprobó, aunque se haya solicitado antes.
+  const aprVentas = RAW.filter(r => r.est_ppto === 'Aprobado' && inPeriodo(r.mes_ar)
+                                 && !pausadoIds.has((r.id||'').trim()));
   // Venta Bruta = suma de Monto PPTO (Sin IVA) de Aprobados
-  const ventaBruta = aprPeriodo.reduce((a,r) => a + r.monto_ppto, 0);
+  const ventaBruta = aprVentas.reduce((a,r) => a + r.monto_ppto, 0);
   // Diferencial Cambiario = suma de Monto por diferencial Cambiario (mismas filas)
-  const difCamb    = aprPeriodo.reduce((a,r) => a + (r.dif_camb||0), 0);
+  const difCamb    = aprVentas.reduce((a,r) => a + (r.dif_camb||0), 0);
   // Ventas-Facturado = Venta Bruta + Diferencial Cambiario
   const ventas     = ventaBruta + difCamb;
 
   // Cantidad: TODOS los IDs únicos Aprobados (sin pausados)
   // Comparación case-insensitive y sin espacios para no perder ninguno
   const nVentas = new Set(
-    RAW.filter(r => (r.est_ppto||'').trim().toLowerCase() === 'aprobado' && inPeriodo(r.mes_sol)
+    RAW.filter(r => (r.est_ppto||'').trim().toLowerCase() === 'aprobado' && inPeriodo(r.mes_ar)
                 && !pausadoIds.has((r.id||'').trim()))
        .map(r => (r.id||'').trim())
        .filter(id => id !== '')
@@ -2287,7 +2292,7 @@ function leadQualifies(id, lw){
 
 /* ══ DETALLE DE TARJETAS (MODAL) ══ */
 const KPI_DETAIL = {
-  ventas:      {title:'Ventas - Facturado',    sub:'Proyectos con presupuesto Aprobado (sin pausados)',  filter:r=>r.est_ppto==='Aprobado'&&inPeriodo(r.mes_sol)&&!RAW.some(x=>x.est_ppto==='Pausado'&&(x.id||'').trim()===(r.id||'').trim())},
+  ventas:      {title:'Ventas - Facturado',    sub:'Proyectos con presupuesto Aprobado (sin pausados) · por Mes A/R de PPTO',  filter:r=>r.est_ppto==='Aprobado'&&inPeriodo(r.mes_ar)&&!RAW.some(x=>x.est_ppto==='Pausado'&&(x.id||'').trim()===(r.id||'').trim())},
   cobrado:     {title:'Cobrado',               sub:'Aprobados con monto cobrado',                        filter:r=>r.est_ppto==='Aprobado'&&r.monto_cob>0&&inSol(r.mes_sol)},
   porcobrar:   {title:'Por Cobrar',            sub:'Aprobados con saldo pendiente de cobro',             filter:r=>r.est_ppto==='Aprobado'&&inPeriodo(r.mes_sol)&&(r.monto_ppto+(r.dif_camb||0))-r.monto_cob>0.01},
   porfacturar: {title:'Proyectos Pendientes por Aprobación', sub:'Enviado al cliente · Pendiente A. C.',                          filter:r=>r.est_ppto==='Enviado - Pendiente A. C.'&&inPeriodo(r.mes_sol)},
