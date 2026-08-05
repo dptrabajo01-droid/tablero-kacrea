@@ -2435,9 +2435,12 @@ function renderModalRows(rows){
     : [{label:null, groups: buildGroups(rows)}];
   const groups = blocks.flatMap(b=>b.groups);
 
-  // Por Cobrar: el total relevante es el saldo pendiente, no el monto del PPTO
+  // Por Cobrar: el total relevante es el saldo pendiente. Ventas: Monto PPTO +
+  // Diferencial Cambiario, igual que la tarjeta. El resto solo Monto PPTO.
   const total = MODAL_KEY==='porcobrar'
     ? rows.reduce((a,r)=>a+((r.monto_ppto+(r.dif_camb||0))-r.monto_cob),0)
+    : MODAL_KEY==='ventas'
+    ? rows.reduce((a,r)=>a+r.monto_ppto+(r.dif_camb||0),0)
     : rows.reduce((a,r)=>a+r.monto_ppto,0);
   const fDate=d=>d?d.toLocaleDateString('es-MX'):'—';
   const pick=(rs,f)=>{ const s=new Set(rs.map(x=>(x[f]||'').trim()).filter(Boolean)); return s.size===0?'—':s.size===1?[...s][0]:'Varios'; };
@@ -2521,8 +2524,10 @@ function renderModalRows(rows){
       }
     } else {
       // ── Modal base (tarjetas de arriba): 9 columnas ──
-      // Por Cobrar muestra el saldo pendiente por fila, no el monto del PPTO
-      const montoOf = r => MODAL_KEY==='porcobrar' ? ((r.monto_ppto+(r.dif_camb||0))-r.monto_cob) : r.monto_ppto;
+      // Por Cobrar: saldo pendiente por fila. Ventas: PPTO + Diferencial. Resto: solo PPTO.
+      const montoOf = r => MODAL_KEY==='porcobrar' ? ((r.monto_ppto+(r.dif_camb||0))-r.monto_cob)
+        : MODAL_KEY==='ventas' ? (r.monto_ppto+(r.dif_camb||0))
+        : r.monto_ppto;
       const montoGrp=rs.reduce((a,r)=>a+montoOf(r),0);
       const svc=pick(rs,'svc_own'), dep=pick(rs,'depto'), resp=pick(rs,'responsable'), est=pick(rs,'est_ppto');
       const estCls=est==='Varios'?'pill-gray':estPill(est);
