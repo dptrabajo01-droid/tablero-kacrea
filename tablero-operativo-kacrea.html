@@ -627,7 +627,7 @@ tbody tr:hover td{background:var(--surface2)}
       <div class="kpi-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg></div>
       <div class="kpi-lbl">Proyectos Asignados</div>
       <div class="kpi-val" id="op-kpi-asignados">—</div>
-      <div class="kpi-sub">Todos los estatus · con responsable asignado</div>
+      <div class="kpi-sub">Excluye Completados y Cancelados · con responsable asignado</div>
     </div>
   </div>
 
@@ -1725,8 +1725,8 @@ function renderOpStatus(){
     const el=document.getElementById('op-kpi-'+id);
     if(el) el.textContent=n;
   });
-  // Proyectos Asignados: cualquier estatus, con Responsable puesto
-  const asignados=opRows(RAW.filter(r=>(r.responsable||'').trim()&&inSol(r.mes_sol)));
+  // Proyectos Asignados: cualquier estatus salvo Completado/Cancelado, con Responsable puesto
+  const asignados=opRows(RAW.filter(r=>(r.responsable||'').trim()&&!['Completado','Cancelado'].includes(r.est_proy)&&inSol(r.mes_sol)));
   const nAsig=new Set(asignados.map(r=>(r.id||'').trim()).filter(Boolean)).size;
   const elAsig=document.getElementById('op-kpi-asignados');
   if(elAsig) elAsig.textContent=nAsig;
@@ -2323,7 +2323,7 @@ const KPI_DETAIL = {
   proy_completado: {title:'Proyectos Completados',  sub:'Estatus del Proyecto: Completado',  pField:'responsable', filter:r=>r.est_proy==='Completado' &&inPeriodo(r.mes_sol)&&opMatchRow(r)},
   proy_enrevision: {title:'Proyectos en Revisión',  sub:'Estatus del Proyecto: En Revisión', pField:'responsable', filter:r=>r.est_proy==='En Revisión'&&inPeriodo(r.mes_sol)&&opMatchRow(r)},
   proy_pausado:    {title:'Proyectos Pausados',     sub:'Estatus del Proyecto: Pausado',     pField:'responsable', filter:r=>r.est_proy==='Pausado'    &&inPeriodo(r.mes_sol)&&opMatchRow(r)},
-  proy_asignados:  {title:'Proyectos Asignados',     sub:'Todos los estatus · con Responsable asignado', pField:'responsable', showEstatus:true, filter:r=>(r.responsable||'').trim()&&inPeriodo(r.mes_sol)&&opMatchRow(r)},
+  proy_asignados:  {title:'Proyectos Asignados',     sub:'Excluye Completados y Cancelados · con Responsable asignado', pField:'responsable', showEstatus:true, filter:r=>(r.responsable||'').trim()&&!['Completado','Cancelado'].includes(r.est_proy)&&inPeriodo(r.mes_sol)&&opMatchRow(r)},
 };
 
 let MODAL_ROWS = [];
