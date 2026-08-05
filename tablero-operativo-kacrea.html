@@ -557,8 +557,8 @@ tbody tr:hover td{background:var(--surface2)}
   </div>
 
   <div class="full card">
-    <div class="card-hdr"><div><div class="card-title">Pricing Comparativo por Servicio</div><div class="card-sub">Rango de precios por servicio · alerta si Máx/Mín &gt; 5</div></div></div>
-    <div class="tbl-wrap"><table><thead><tr><th>Servicio</th><th class="r">n</th><th class="r">Promedio</th><th class="r">Mín</th><th class="r">Máx</th><th class="r">Rango</th><th>Alerta</th></tr></thead><tbody id="tbody-l"></tbody></table></div>
+    <div class="card-hdr"><div><div class="card-title">Pricing Comparativo por Servicio</div><div class="card-sub">Compara el precio más caro vs. el más barato dentro de cada servicio · señala si el más caro costó más de 5 veces el más barato</div></div></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Servicio</th><th class="r" title="Cantidad de proyectos aprobados de este servicio">#&nbsp;Proyectos</th><th class="r" title="Precio promedio cobrado en este servicio">Precio Promedio</th><th class="r" title="El proyecto más barato de este servicio">Precio Mínimo</th><th class="r" title="El proyecto más caro de este servicio">Precio Máximo</th><th class="r" title="Diferencia en dólares entre el más caro y el más barato">Diferencia</th><th title="Cuántas veces más caro fue el proyecto más caro vs. el más barato">Consistencia de Precio</th></tr></thead><tbody id="tbody-l"></tbody></table></div>
   </div>
 
   </div><!-- /panel-resumen -->
@@ -2252,6 +2252,14 @@ function renderL(){
     .filter(Boolean)
     .sort((a,b) => b.avg - a.avg);
 
+  // Etiqueta de consistencia: muestra el múltiplo real, no solo un semáforo
+  const consistenciaHTML = r => {
+    if(r.min===0 && r.max>0) return `<span class="pill pill-red" title="El proyecto más barato de este servicio se cobró en $0">🔴 Mín. es $0</span>`;
+    return r.ratio > 5
+      ? `<span class="pill pill-red" title="El más caro costó ${r.ratio.toFixed(1)} veces más que el más barato">🔴 ${r.ratio.toFixed(1)}x más caro</span>`
+      : `<span class="pill pill-green" title="El más caro costó ${r.ratio.toFixed(1)} veces el más barato">✅ ${r.ratio.toFixed(1)}x</span>`;
+  };
+
   document.getElementById('tbody-l').innerHTML = sorted.length
     ? sorted.map(r => `
     <tr>
@@ -2261,7 +2269,7 @@ function renderL(){
       <td class="r muted">${fmt(r.min)}</td>
       <td class="r muted">${fmt(r.max)}</td>
       <td class="r">${fmt(r.rango)}</td>
-      <td style="text-align:center">${r.ratio > 5 ? '🔴' : '✅'}</td>
+      <td>${consistenciaHTML(r)}</td>
     </tr>`).join('')
     : `<tr><td colspan="8" class="empty">Sin datos</td></tr>`;
 }
