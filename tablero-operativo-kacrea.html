@@ -2415,13 +2415,25 @@ function renderModalRows(rows){
   }
 
   // Agrupar por ID_Proyecto · cada fila sin ID queda como grupo individual
-  const groups=[]; const byId=new Map();
-  rows.forEach(r=>{
-    const id=(r.id||'').trim();
-    if(!id){ groups.push({rows:[r]}); return; }
-    if(!byId.has(id)){ const g={rows:[]}; byId.set(id,g); groups.push(g); }
-    byId.get(id).rows.push(r);
-  });
+  const buildGroups=(rowsSubset)=>{
+    const groups=[]; const byId=new Map();
+    rowsSubset.forEach(r=>{
+      const id=(r.id||'').trim();
+      if(!id){ groups.push({rows:[r]}); return; }
+      if(!byId.has(id)){ const g={rows:[]}; byId.set(id,g); groups.push(g); }
+      byId.get(id).rows.push(r);
+    });
+    return groups;
+  };
+  // Proyectos Asignados (y cualquier modal con estatus mixtos): agrupar primero
+  // por bloque de Estatus del Proyecto, como la vista "Agrupar por" de Sheets.
+  // Nota: si un proyecto tiene fases en distintos estatus, aparece una vez por
+  // cada bloque al que pertenezca alguna de sus fases.
+  const STATUS_BLOCKS=['En Curso','En Revisión','Pausado','Pendiente',''];
+  const blocks = MODAL_SHOWESTATUS
+    ? STATUS_BLOCKS.map(st=>({label: st||'Sin estatus', groups: buildGroups(rows.filter(r=>(r.est_proy||'')===st))})).filter(b=>b.groups.length)
+    : [{label:null, groups: buildGroups(rows)}];
+  const groups = blocks.flatMap(b=>b.groups);
 
   // Por Cobrar: el total relevante es el saldo pendiente, no el monto del PPTO
   const total = MODAL_KEY==='porcobrar'
@@ -2436,8 +2448,15 @@ function renderModalRows(rows){
   const epPill=e=>{ const v=(e||'').trim(); if(!v||v==='—') return '—'; if(v==='Varios') return '<span class="pill pill-gray">Varios</span>'; const c=v==='En Revisión'?'pill-purple':v==='Completado'?'pill-green':v==='Cancelado'?'pill-red':v==='Pausado'?'pill-gray':'pill-blue'; return `<span class="pill ${c}">${v}</span>`; };
 
   let html='';
-  groups.forEach((g,gi)=>{
-    const rs=g.rows, multi=rs.length>1, head=rs[0], key='g'+gi;
+  let gi=0;
+  blocks.forEach(block=>{
+    if(MODAL_SHOWESTATUS){
+      const nb=block.groups.length;
+      const pillLabel=block.label==='Sin estatus'?'<span class="pill pill-gray">Sin estatus</span>':epPill(block.label);
+      html+=`<tr class="tbl-total"><td colspan="${nCols}">${pillLabel} · ${nb} proyecto${nb!==1?'s':''}</td></tr>`;
+    }
+  block.groups.forEach((g)=>{
+    const rs=g.rows, multi=rs.length>1, head=rs[0], key='g'+(gi++);
     if(MODAL_LAYOUT==='op'){
       // ── Modal SLIM de Operación: Proyecto · Cliente · Responsable · Depto · F.Rev · F.Ent · F.Límite ──
       const estProy=pick(rs,'est_proy');
@@ -2534,6 +2553,7 @@ function renderModalRows(rows){
         });
       }
     }
+  });
   });
   tb.innerHTML=html;
 
