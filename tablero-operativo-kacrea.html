@@ -2234,7 +2234,7 @@ function renderL(){
     if(!bySvc.has(s)) bySvc.set(s, new Map()); // id -> monto
     const idMap = bySvc.get(s);
     const id = (r.id || '').trim();
-    if(id) idMap.set(id, (idMap.get(id) || 0) + r.monto_ppto);
+    if(id) idMap.set(id, (idMap.get(id) || 0) + r.monto_ppto + (r.dif_camb||0));
   });
 
   const sorted = [...bySvc.entries()]
