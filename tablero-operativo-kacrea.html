@@ -622,6 +622,15 @@ tbody tr:hover td{background:var(--surface2)}
       <div class="kpi-val" id="op-kpi-pausado">—</div>    </div>
   </div>
 
+  <div class="op-kpi-grid" style="grid-template-columns:1fr">
+    <div class="kpi c-teal clickable" onclick="openDetail('proy_asignados')">
+      <div class="kpi-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg></div>
+      <div class="kpi-lbl">Proyectos Asignados</div>
+      <div class="kpi-val" id="op-kpi-asignados">—</div>
+      <div class="kpi-sub">Todos los estatus · con responsable asignado</div>
+    </div>
+  </div>
+
   <div class="full card">
     <div class="card-hdr">
       <div><div class="card-title">Calendario de Gestión — Semana</div><div class="card-sub">Gestión (Fecha de Revisión) y entregas (Fecha de Entrega) de la semana</div></div>
@@ -1716,6 +1725,11 @@ function renderOpStatus(){
     const el=document.getElementById('op-kpi-'+id);
     if(el) el.textContent=n;
   });
+  // Proyectos Asignados: cualquier estatus, con Responsable puesto
+  const asignados=opRows(RAW.filter(r=>(r.responsable||'').trim()&&inSol(r.mes_sol)));
+  const nAsig=new Set(asignados.map(r=>(r.id||'').trim()).filter(Boolean)).size;
+  const elAsig=document.getElementById('op-kpi-asignados');
+  if(elAsig) elAsig.textContent=nAsig;
 }
 
 /* ══ G: CARGA POR DEPARTAMENTO ══ */
@@ -2309,6 +2323,7 @@ const KPI_DETAIL = {
   proy_completado: {title:'Proyectos Completados',  sub:'Estatus del Proyecto: Completado',  pField:'responsable', filter:r=>r.est_proy==='Completado' &&inPeriodo(r.mes_sol)&&opMatchRow(r)},
   proy_enrevision: {title:'Proyectos en Revisión',  sub:'Estatus del Proyecto: En Revisión', pField:'responsable', filter:r=>r.est_proy==='En Revisión'&&inPeriodo(r.mes_sol)&&opMatchRow(r)},
   proy_pausado:    {title:'Proyectos Pausados',     sub:'Estatus del Proyecto: Pausado',     pField:'responsable', filter:r=>r.est_proy==='Pausado'    &&inPeriodo(r.mes_sol)&&opMatchRow(r)},
+  proy_asignados:  {title:'Proyectos Asignados',     sub:'Todos los estatus · con Responsable asignado', pField:'responsable', showEstatus:true, filter:r=>(r.responsable||'').trim()&&inPeriodo(r.mes_sol)&&opMatchRow(r)},
 };
 
 let MODAL_ROWS = [];
@@ -2317,7 +2332,7 @@ let MODAL_KEY = '';
 // tarjetas de arriba) o 'responsable' (Responsable, tarjetas de Operación)
 let MODAL_PFIELD='canal_int', MODAL_PLABEL='Todos los responsables de cuentas';
 // El modal de Operación añade columnas de fechas (Revisión/Entrega/Límite)
-let MODAL_ISOP=false, MODAL_SHOWDUE=false, MODAL_LAYOUT='base';
+let MODAL_ISOP=false, MODAL_SHOWDUE=false, MODAL_LAYOUT='base', MODAL_SHOWESTATUS=false;
 // Filtro de vencimiento: 'todos' | 'porvencer' | 'vencidos' · umbral de días compartido
 let MODAL_DUE='todos', AG_DUE='todos', CAL_DUE='todos', DUE_DAYS=7;
 function isActiveProy(r){ return !['Completado','Cancelado'].includes(r.est_proy); }
@@ -2347,11 +2362,12 @@ function openDetail(key){
   MODAL_PLABEL=MODAL_PFIELD==='responsable'?'Todos los responsables':'Todos los responsables de cuentas';
   MODAL_ISOP=MODAL_PFIELD==='responsable';
   MODAL_LAYOUT=cfg.layout||(MODAL_ISOP?'op':'base');
+  MODAL_SHOWESTATUS=!!cfg.showEstatus;
   document.getElementById('modal-f-ppto').style.display=MODAL_ISOP?'none':'';
   document.getElementById('modal-f-fact').style.display=key==='porcobrar'?'':'none';
   document.getElementById('modal-f-fact').value='';
   document.getElementById('modal-thead').innerHTML=
-    MODAL_LAYOUT==='op'      ? '<th>Fecha Solicitud</th><th>Cliente</th><th>Proyecto</th><th>Servicio</th><th>Departamento</th><th>Responsable</th><th class="r">F. Inicio</th><th class="r">F. Revisión</th><th class="r">F. Entrega</th><th class="r">F. Límite</th>'
+    MODAL_LAYOUT==='op'      ? '<th>Fecha Solicitud</th><th>Cliente</th><th>Proyecto</th><th>Servicio</th><th>Departamento</th><th>Responsable</th>'+(MODAL_SHOWESTATUS?'<th>Estatus</th>':'')+'<th class="r">F. Inicio</th><th class="r">F. Revisión</th><th class="r">F. Entrega</th><th class="r">F. Límite</th>'
     : MODAL_LAYOUT==='pausado'? '<th>Cliente</th><th>Proyecto</th><th>Servicio</th><th>Estatus PPTO</th><th>Nro. PPTO</th><th class="r">F. PPTO</th><th class="r">F. A/R PPTO</th><th>Estatus Proyecto</th><th>Departamento</th>'
     :                           '<th>Fecha Solicitud</th><th>Canal Interno</th><th>Cliente</th><th>Proyecto</th><th>Servicio</th><th>Departamento</th><th>Responsable</th><th>Estatus PPTO</th><th class="r">Monto</th>';
   // Barra de vencimiento: solo en modales de Operación con proyectos activos
@@ -2390,7 +2406,7 @@ function renderModalRows(rows){
   const cnt=document.getElementById('modal-count');
   const foot=document.getElementById('modal-foot');
   const today=new Date(); today.setHours(0,0,0,0);
-  const nCols=MODAL_LAYOUT==='op'?10:9;
+  const nCols=MODAL_LAYOUT==='op'?(10+(MODAL_SHOWESTATUS?1:0)):9;
   if(!rows.length){
     tb.innerHTML=`<tr><td colspan="${nCols}" class="empty">Sin registros</td></tr>`;
     cnt.textContent='0 proyectos';
@@ -2432,6 +2448,7 @@ function renderModalRows(rows){
         <td class="muted">${pick(rs,'svc_own')}</td>
         <td>${deptoPill(pick(rs,'depto'))}</td>
         <td class="muted">${pick(rs,'responsable')}</td>
+        ${MODAL_SHOWESTATUS?`<td>${epPill(estProy)}</td>`:''}
         <td class="r muted">${pickDateStr(rs,'fecha_ini')}</td>
         <td class="r muted">${pickDateStr(rs,'fecha_rev')}</td>
         <td class="r muted">${pickDateStr(rs,'fecha_ent')}</td>
@@ -2446,6 +2463,7 @@ function renderModalRows(rows){
             <td class="muted">${r.svc_own||'—'}${r.svc_asoc?` · ${r.svc_asoc}`:''}</td>
             <td>${deptoPill(r.depto)}</td>
             <td class="muted">${r.responsable||'—'}</td>
+            ${MODAL_SHOWESTATUS?`<td>${epPill(r.est_proy)}</td>`:''}
             <td class="r muted">${fDate(r.fecha_ini)}</td>
             <td class="r muted">${fDate(r.fecha_rev)}</td>
             <td class="r muted">${fDate(r.fecha_ent)}</td>
