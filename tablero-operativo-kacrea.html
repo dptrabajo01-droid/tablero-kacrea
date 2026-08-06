@@ -2587,6 +2587,11 @@ function toggleGroup(key){
 // Poblar el select de Departamento con los valores presentes en las filas del modal.
 // El select de Responsable se puebla aparte (en cascada según el departamento elegido).
 function poblarModalFiltros(rows){
+  const clientes=[...new Set(rows.map(r=>r.cliente).filter(Boolean))].sort();
+  const selC=document.getElementById('modal-f-cliente');
+  selC.innerHTML='<option value="">Todos los clientes</option>'+
+    clientes.map(c=>`<option value="${c.replace(/"/g,'&quot;')}">${c}</option>`).join('');
+  selC.value='';
   const deptos=[...new Set(rows.map(r=>r.depto).filter(Boolean))].sort();
   const selD=document.getElementById('modal-f-depto');
   selD.innerHTML='<option value="">Todos los departamentos</option>'+
@@ -2632,6 +2637,7 @@ function onModalDeptoChange(){
 
 function limpiarModalFiltros(){
   document.getElementById('modal-search').value='';
+  document.getElementById('modal-f-cliente').value='';
   document.getElementById('modal-f-depto').value='';
   poblarModalRC();
   poblarModalPPTO();
@@ -2645,18 +2651,21 @@ function limpiarModalFiltros(){
 // El botón "Limpiar filtros" del modal solo se muestra si hay algún filtro activo
 function updateModalClearVisibility(){
   const q=document.getElementById('modal-search').value.trim();
+  const fc=document.getElementById('modal-f-cliente').value;
   const fd=document.getElementById('modal-f-depto').value;
   const fr=document.getElementById('modal-f-rc').value;
   const fp=document.getElementById('modal-f-ppto').value;
   const ff=document.getElementById('modal-f-fact').value;
-  const b=document.getElementById('modal-clear'); if(b) b.style.display=(q||fd||fr||fp||ff)?'inline-block':'none';
+  const b=document.getElementById('modal-clear'); if(b) b.style.display=(q||fc||fd||fr||fp||ff)?'inline-block':'none';
 }
 
 function filterModal(){
   const q =document.getElementById('modal-search').value.trim().toLowerCase();
+  const fc=document.getElementById('modal-f-cliente').value;
   const fd=document.getElementById('modal-f-depto').value;
   const fr=document.getElementById('modal-f-rc').value;
   let f=MODAL_ROWS;
+  if(fc) f=f.filter(r=>r.cliente===fc);
   if(fd) f=f.filter(r=>r.depto===fd);
   if(fr) f=f.filter(r=>r[MODAL_PFIELD]===fr);
   const fp=document.getElementById('modal-f-ppto').value;
@@ -2701,6 +2710,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeDetail(); cl
     </div>
     <div class="modal-tools">
       <input class="modal-search" id="modal-search" placeholder="Buscar cliente, servicio, canal o estatus..." oninput="filterModal()">
+      <select id="modal-f-cliente" onchange="filterModal()"><option value="">Todos los clientes</option></select>
       <select id="modal-f-depto" onchange="onModalDeptoChange()"><option value="">Todos los departamentos</option></select>
       <select id="modal-f-rc" onchange="filterModal()"><option value="">Todos los responsables de cuentas</option></select>
       <select id="modal-f-ppto" onchange="filterModal()"><option value="">Todos los resp. de PPTO</option></select>
