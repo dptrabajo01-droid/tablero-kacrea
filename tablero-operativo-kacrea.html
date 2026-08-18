@@ -1319,7 +1319,7 @@ function renderPE(){
       <div class="pe-mode-tag">${lblMode}</div>
     </div>
     <div class="pe-rows">${barsHtml}</div>
-    ${otherIng>0?`<div class="pe-hint" style="margin-top:-6px;margin-bottom:8px">* Incluye ${otherDepts.join(', ')} (${fmt(otherIng)}), que aún no ${otherDepts.length>1?'tienen':'tiene'} Punto de Equilibrio definido</div>`:''}
+    ${otherIng>0?`<div style="font-size:10.5px;color:var(--faint);margin-top:6px;line-height:1.5">* Incluye ${otherDepts.join(', ')} (${fmt(otherIng)}), que aún no ${otherDepts.length>1?'tienen':'tiene'} Punto de Equilibrio definido</div>`:''}
     <div class="pe-legend"><span><i style="background:#22C55E"></i>Cubre (≥100%)</span><span><i style="background:#F59E0B"></i>Cerca (75–99%)</span><span><i style="background:#DC2626"></i>Debajo (&lt;75%)</span><span class="pe-legend-mark"><i class="mk"></i>Piso de venta</span><span class="pe-hint">Clic para ver el detalle →</span></div>`;
 }
 
