@@ -1297,6 +1297,12 @@ function renderPE(){
   const totIng = rows.reduce((a,r)=>a+r.ing,0);
   const totTarget = rows.reduce((a,r)=>a+r.target,0);
   const totPct = totTarget>0? totIng/totTarget*100 : 0;
+  // Departamentos sin Punto de Equilibrio definido todavía (ej. Arquitectura):
+  // su ingreso se suma al Ingreso Neto general, pero no tienen barra propia
+  // ni piso/meta con qué compararse, así que no afectan Meta ni Cumplimiento.
+  const otherDepts = [...new Set(RAW.map(r=>r.depto).filter(Boolean))].filter(d=>!PE_CONFIG[d]);
+  const otherIng = otherDepts.reduce((a,d)=>a+peIngresoNeto(d,mode).valor,0);
+  const totIngAll = totIng + otherIng;
   const vSel = document.getElementById('f-sol').value;
   const esAnual = mode!=='mensual';
   const meses = peMesesTranscurridos();
@@ -1304,14 +1310,16 @@ function renderPE(){
     : mode==='anual_fecha' ? `Anual · a la fecha (${meses} ${meses===1?'mes':'meses'} · piso × ${meses})`
     : (vSel? 'Mensual · '+vSel : 'Mensual · promedio');
   const metaLbl = mode==='anual_fecha' ? 'Meta a la fecha (piso)' : 'Meta total (piso)';
+  const ingTitle = otherIng>0 ? `Incluye ${otherDepts.join(', ')} (${fmt(otherIng)}), que aún no ${otherDepts.length>1?'tienen':'tiene'} Punto de Equilibrio definido` : '';
   el.innerHTML = `
     <div class="pe-summary">
-      <div class="pe-sm"><span class="pe-sm-lbl">Ingreso Neto ${esAnual?'del año':'del período'}</span><span class="pe-sm-val" style="color:var(--teal)">${fmt(totIng)}</span></div>
+      <div class="pe-sm"><span class="pe-sm-lbl"${ingTitle?` title="${ingTitle}"`:''}>Ingreso Neto ${esAnual?'del año':'del período'}${otherIng>0?' *':''}</span><span class="pe-sm-val" style="color:var(--teal)">${fmt(totIngAll)}</span></div>
       <div class="pe-sm"><span class="pe-sm-lbl">${metaLbl}</span><span class="pe-sm-val">${fmt(totTarget)}</span></div>
       <div class="pe-sm"><span class="pe-sm-lbl">Cumplimiento</span><span class="pe-sm-val" style="color:${peColor(totPct)}">${totPct.toFixed(0)}%</span></div>
       <div class="pe-mode-tag">${lblMode}</div>
     </div>
     <div class="pe-rows">${barsHtml}</div>
+    ${otherIng>0?`<div class="pe-hint" style="margin-top:-6px;margin-bottom:8px">* Incluye ${otherDepts.join(', ')} (${fmt(otherIng)}), que aún no ${otherDepts.length>1?'tienen':'tiene'} Punto de Equilibrio definido</div>`:''}
     <div class="pe-legend"><span><i style="background:#22C55E"></i>Cubre (≥100%)</span><span><i style="background:#F59E0B"></i>Cerca (75–99%)</span><span><i style="background:#DC2626"></i>Debajo (&lt;75%)</span><span class="pe-legend-mark"><i class="mk"></i>Piso de venta</span><span class="pe-hint">Clic para ver el detalle →</span></div>`;
 }
 
@@ -1324,6 +1332,12 @@ function setPEMode(mode){
 
 function openPEDetail(){
   const g=PE_GLOBAL;
+  // Departamentos sin Punto de Equilibrio definido todavía (ej. Arquitectura):
+  // no tienen fila propia en esta tabla (no hay Costo Fijo/Piso que mostrar),
+  // pero su Ingreso Neto se nota aparte para que cuadre con la tarjeta.
+  const otherDepts = [...new Set(RAW.map(r=>r.depto).filter(Boolean))].filter(d=>!PE_CONFIG[d]);
+  const otherIngMes = otherDepts.reduce((a,d)=>a+peIngresoNeto(d,'mensual').valor,0);
+  const otherIngAnio = otherDepts.reduce((a,d)=>a+peIngresoNeto(d,'anual_12').valor,0);
   const bodyRows = PE_ORDER.filter(d=>PE_CONFIG[d]).map(d=>{
     const c=PE_CONFIG[d];
     const gastos=c.costoFijo+c.gastoAsignado;
@@ -1389,6 +1403,7 @@ function openPEDetail(){
         </tr>
       </tbody>
     </table></div>
+    ${otherDepts.length?`<div class="pe-note">* ${otherDepts.join(', ')} ${otherDepts.length>1?'aún no tienen':'aún no tiene'} Punto de Equilibrio definido, por eso no ${otherDepts.length>1?'aparecen':'aparece'} en esta tabla. Su Ingreso Neto (mensual: ${fmt(otherIngMes)} · anual: ${fmt(otherIngAnio)}) sí se incluye en el total de la tarjeta de arriba.</div>`:''}
     <div class="pe-note">Ingresos / Costo Variable / Mc Promedio y % de Margen de Contribución provienen del Escenario 2. Mc Promedio = Ingresos Prom. − Costo Var. Prom.; % Mc = Mc ÷ Ingresos. Punto de equilibrio = piso de venta mensual (venta mínima para cubrir Costo Fijo + Gasto Asignado); anual = piso × 12. Ingreso Neto = Monto PPTO aprobado (sin diferencial cambiario ni pausados).</div>`;
   document.getElementById('pe-modal-ov').classList.add('on');
   document.body.style.overflow='hidden';
