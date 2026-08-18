@@ -1699,11 +1699,12 @@ function updateOpClearVisibility(){
 
 // Identidad de color por departamento · fija y usada en todo el dashboard
 const DEPTO_COLORS={
-  'Marketing':'#7C3AED',   // morado
-  'Producción':'#CA8A04',  // amarillo
-  'Diseño':'#0EA5E9',      // celeste
-  'Audiovisual':'#2563EB', // azul
-  'Digital':'#DC2626'      // rojo
+  'Marketing':'#7C3AED',    // morado
+  'Producción':'#CA8A04',   // amarillo
+  'Diseño':'#0EA5E9',       // celeste
+  'Audiovisual':'#2563EB',  // azul
+  'Digital':'#DC2626',      // rojo
+  'Arquitectura':'#16A34A'  // verde
 };
 function deptoColor(d){ return DEPTO_COLORS[(d||'').trim()]||'#64748B'; }
 // Pill de departamento con su color de identidad
